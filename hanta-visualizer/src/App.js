@@ -129,6 +129,7 @@ L.Icon.Default.mergeOptions({
 function App() {
   const [markers, setMarkers] = useState([]);
   const [selectedMarkerId, setSelectedMarkerId] = useState('');
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [locationFilter, setLocationFilter] = useState('all');
   const [severityFilter, setSeverityFilter] = useState('all');
   const [totalReports, setTotalReports] = useState(0);
@@ -270,143 +271,165 @@ function App() {
           </div>
         </div>
 
-        <aside className="side-panel glass-card">
-          <div className="panel-header">
-            <div>
-              <div className="featured-eyebrow">Outbreak panel</div>
-              <h2 className="panel-title">List and detail</h2>
-            </div>
-            <div className="panel-summary">{filteredMarkers.length} shown</div>
-          </div>
-
-          <div className="filter-grid">
-            <label className="filter-field">
-              <span>Country / region</span>
-              <select value={locationFilter} onChange={event => setLocationFilter(event.target.value)}>
-                <option value="all">All</option>
-                {locationOptions.map(location => (
-                  <option key={location} value={location}>{location}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="filter-field">
-              <span>Severity</span>
-              <select value={severityFilter} onChange={event => setSeverityFilter(event.target.value)}>
-                <option value="all">All</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </label>
-          </div>
-
-          <div className="panel-meta-row">
-            <span>{filteredReportCount} mapped reports in view</span>
-            {(locationFilter !== 'all' || severityFilter !== 'all') && (
-              <button
-                type="button"
-                className="text-reset-button"
-                onClick={() => {
-                  setLocationFilter('all');
-                  setSeverityFilter('all');
-                }}
-              >
-                Reset filters
-              </button>
-            )}
-          </div>
-
-          <div className="side-panel-body">
-            <div className="outbreak-list">
-              {filteredMarkers.length ? filteredMarkers.map(cluster => (
+        {isPanelOpen ? (
+          <aside className="side-panel glass-card">
+            <div className="panel-header">
+              <div>
+                <div className="featured-eyebrow">Outbreak panel</div>
+                <h2 className="panel-title">List and detail</h2>
+              </div>
+              <div className="panel-header-actions">
+                <div className="panel-summary">{filteredMarkers.length} shown</div>
                 <button
-                  key={cluster.id}
                   type="button"
-                  className={`outbreak-item${cluster.id === selectedMarkerId ? ' is-selected' : ''}`}
-                  onClick={() => setSelectedMarkerId(cluster.id)}
+                  className="panel-close-button"
+                  aria-label="Close outbreak panel"
+                  onClick={() => setIsPanelOpen(false)}
                 >
-                  <div className="outbreak-item__top">
-                    <span className="outbreak-item__name">{cluster.locationName}</span>
-                    <span className={`severity-pill severity-pill--${getSeverityKey(cluster.reportCount)}`}>
-                      {getSeverityLabel(cluster.reportCount)}
-                    </span>
-                  </div>
-                  <div className="outbreak-item__meta">
-                    <span>{cluster.reportCount} reports</span>
-                    <span>{cluster.reports[0].source}</span>
-                  </div>
+                  ×
                 </button>
-              )) : (
-                <div className="empty-panel-state">
-                  <strong>No outbreaks found.</strong>
-                  <span>Try widening the country or severity filters.</span>
-                </div>
+              </div>
+            </div>
+
+            <div className="filter-grid">
+              <label className="filter-field">
+                <span>Country / region</span>
+                <select value={locationFilter} onChange={event => setLocationFilter(event.target.value)}>
+                  <option value="all">All</option>
+                  {locationOptions.map(location => (
+                    <option key={location} value={location}>{location}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="filter-field">
+                <span>Severity</span>
+                <select value={severityFilter} onChange={event => setSeverityFilter(event.target.value)}>
+                  <option value="all">All</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="panel-meta-row">
+              <span>{filteredReportCount} mapped reports in view</span>
+              {(locationFilter !== 'all' || severityFilter !== 'all') && (
+                <button
+                  type="button"
+                  className="text-reset-button"
+                  onClick={() => {
+                    setLocationFilter('all');
+                    setSeverityFilter('all');
+                  }}
+                >
+                  Reset filters
+                </button>
               )}
             </div>
 
-            <div className="detail-panel">
-              {featuredMarker ? (
-                <>
-                  <div className="featured-header">
-                    <div>
-                      <div className="featured-eyebrow">Selected cluster</div>
-                      <h3 className="featured-title">{featuredMarker.locationName}</h3>
+            <div className="side-panel-body">
+              <div className="outbreak-list">
+                {filteredMarkers.length ? filteredMarkers.map(cluster => (
+                  <button
+                    key={cluster.id}
+                    type="button"
+                    className={`outbreak-item${cluster.id === selectedMarkerId ? ' is-selected' : ''}`}
+                    onClick={() => setSelectedMarkerId(cluster.id)}
+                  >
+                    <div className="outbreak-item__top">
+                      <span className="outbreak-item__name">{cluster.locationName}</span>
+                      <span className={`severity-pill severity-pill--${getSeverityKey(cluster.reportCount)}`}>
+                        {getSeverityLabel(cluster.reportCount)}
+                      </span>
                     </div>
-                    <span className={`severity-pill severity-pill--${getSeverityKey(featuredMarker.reportCount)}`}>
-                      {getSeverityLabel(featuredMarker.reportCount)}
-                    </span>
-                  </div>
-
-                  <p className="featured-story">{featuredMarker.reports[0].title}</p>
-
-                  <div className="featured-stats">
-                    <div>
-                      <strong>{featuredMarker.reportCount}</strong>
-                      <span>clustered reports</span>
+                    <div className="outbreak-item__meta">
+                      <span>{cluster.reportCount} reports</span>
+                      <span>{cluster.reports[0].source}</span>
                     </div>
-                    <div>
-                      <strong>{featuredMarker.locationName}</strong>
-                      <span>active focus</span>
+                  </button>
+                )) : (
+                  <div className="empty-panel-state">
+                    <strong>No outbreaks found.</strong>
+                    <span>Try widening the country or severity filters.</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="detail-panel">
+                {featuredMarker ? (
+                  <>
+                    <div className="featured-header">
+                      <div>
+                        <div className="featured-eyebrow">Selected cluster</div>
+                        <h3 className="featured-title">{featuredMarker.locationName}</h3>
+                      </div>
+                      <span className={`severity-pill severity-pill--${getSeverityKey(featuredMarker.reportCount)}`}>
+                        {getSeverityLabel(featuredMarker.reportCount)}
+                      </span>
                     </div>
-                  </div>
 
-                  <div className="featured-actions">
-                    <a
-                      className="action-button action-button--primary"
-                      href={featuredMarker.reports[0].link}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Open latest report
-                    </a>
-                  </div>
+                    <p className="featured-story">{featuredMarker.reports[0].title}</p>
 
-                  <div className="detail-report-list">
-                    {featuredMarker.reports.map((report, index) => (
+                    <div className="featured-stats">
+                      <div>
+                        <strong>{featuredMarker.reportCount}</strong>
+                        <span>clustered reports</span>
+                      </div>
+                      <div>
+                        <strong>{featuredMarker.locationName}</strong>
+                        <span>active focus</span>
+                      </div>
+                    </div>
+
+                    <div className="featured-actions">
                       <a
-                        key={`${report.link}-${index}`}
-                        className="detail-report-link"
-                        href={report.link}
+                        className="action-button action-button--primary"
+                        href={featuredMarker.reports[0].link}
                         target="_blank"
                         rel="noreferrer"
                       >
-                        <span className="detail-report-source">{report.source}</span>
-                        <span className="detail-report-title">{report.title}</span>
-                        <span className="detail-report-date">{formatPublishedDate(report.published)}</span>
+                        Open latest report
                       </a>
-                    ))}
+                    </div>
+
+                    <div className="detail-report-list">
+                      {featuredMarker.reports.map((report, index) => (
+                        <a
+                          key={`${report.link}-${index}`}
+                          className="detail-report-link"
+                          href={report.link}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <span className="detail-report-source">{report.source}</span>
+                          <span className="detail-report-title">{report.title}</span>
+                          <span className="detail-report-date">{formatPublishedDate(report.published)}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="empty-panel-state detail-empty-state">
+                    <strong>No active cluster</strong>
+                    <span>Select a different filter combination or clear the filters.</span>
                   </div>
-                </>
-              ) : (
-                <div className="empty-panel-state detail-empty-state">
-                  <strong>No active cluster</strong>
-                  <span>Select a different filter combination or clear the filters.</span>
-                </div>
-              )}
+                )}
+              </div>
             </div>
+          </aside>
+        ) : (
+          <div className="panel-toggle-wrap">
+            <button
+              type="button"
+              className="panel-toggle-button glass-card"
+              onClick={() => setIsPanelOpen(true)}
+            >
+              Open outbreak panel
+            </button>
           </div>
-        </aside>
+        )}
       </div>
 
       <MapContainer
