@@ -748,12 +748,12 @@
   }
 
   .bottom-overlay {
-    grid-template-columns: minmax(220px, 280px) minmax(300px, 1fr);
+    grid-template-columns: minmax(220px, 280px) 1fr;
     gap: 12px;
   }
 
   .side-panel {
-    width: min(760px, 100%);
+    width: 100%;
     max-height: min(80svh, 760px);
   }
 }
