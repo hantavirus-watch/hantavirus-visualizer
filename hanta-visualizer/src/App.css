@@ -942,6 +942,36 @@
   text-decoration: underline;
 }
 
+/* ── Donate FAB ── */
+.donate-fab {
+  position: absolute;
+  bottom: 76px;
+  right: 24px;
+  z-index: 9;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px 10px 12px;
+  border-radius: 999px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.donate-fab:hover {
+  transform: translateY(-2px);
+  background: var(--surface-active);
+}
+
+.donate-fab svg {
+  width: 20px;
+  height: 20px;
+  color: #ff5e5b;
+  flex: 0 0 auto;
+}
+
 /* ── Telegram FAB (always visible) ── */
 .tg-fab {
   position: absolute;
