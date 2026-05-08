@@ -60,6 +60,25 @@ function App() {
         {loadError && <div style={{ marginTop: '4px', color: '#991b1b' }}>{loadError}</div>}
       </div>
 
+      <div style={{
+        position: 'absolute',
+        right: 16,
+        bottom: 16,
+        zIndex: 1000,
+        background: 'rgba(255, 255, 255, 0.94)',
+        padding: '10px 12px',
+        borderRadius: '10px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+        fontSize: '12px',
+        lineHeight: 1.4,
+      }}>
+        <div>Created by Valentina Schiavon</div>
+        <div>Copyright {new Date().getFullYear()} Valentina Schiavon</div>
+        <a href="https://github.com/valentinaschiavon99" target="_blank" rel="noreferrer">
+          github.com/valentinaschiavon99
+        </a>
+      </div>
+
       <MapContainer center={[20, 0]} zoom={2} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"

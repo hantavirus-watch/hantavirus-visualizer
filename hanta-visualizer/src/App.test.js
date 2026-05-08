@@ -24,6 +24,12 @@ test('renders only geolocated outbreak points', async () => {
   render(<App />);
 
   expect(screen.getByText(/HantaWatch Live/i)).toBeInTheDocument();
+  expect(screen.getByText(/Created by Valentina Schiavon/i)).toBeInTheDocument();
+  expect(screen.getByText(/Copyright/i)).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /github.com\/valentinaschiavon99/i })).toHaveAttribute(
+    'href',
+    'https://github.com/valentinaschiavon99'
+  );
   expect(screen.getByText(/Loading outbreak data/i)).toBeInTheDocument();
 
   await waitFor(() => {
