@@ -241,7 +241,8 @@
   bottom: 50px;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(240px, 300px) 1fr;
+  grid-template-columns: minmax(220px, 260px) minmax(0, 540px);
+  justify-content: space-between;
   gap: 16px;
   align-items: end;
 }
@@ -407,13 +408,13 @@
 }
 
 .side-panel {
-  justify-self: stretch;
-  width: 100%;
-  max-height: min(82svh, 860px);
+  justify-self: end;
+  width: min(540px, 100%);
+  max-height: min(78svh, 800px);
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr);
-  gap: 14px;
-  overflow: auto;
+  gap: 12px;
+  overflow: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
@@ -488,10 +489,9 @@
 .side-panel-body {
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(260px, 1fr) minmax(360px, 1.15fr);
-  min-width: 740px;
-  width: max-content;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   min-height: 0;
+  overflow: hidden;
 }
 
 .outbreak-list,
@@ -748,13 +748,13 @@
   }
 
   .bottom-overlay {
-    grid-template-columns: minmax(220px, 280px) 1fr;
+    grid-template-columns: minmax(200px, 240px) minmax(0, 480px);
     gap: 12px;
   }
 
   .side-panel {
-    width: 100%;
-    max-height: min(80svh, 760px);
+    width: min(480px, 100%);
+    max-height: min(78svh, 740px);
   }
 }
 
@@ -791,17 +791,22 @@
   }
 
   .side-panel-body {
-    grid-template-columns: minmax(260px, 1fr) minmax(320px, 1.1fr);
-    grid-template-rows: none;
-    min-width: 680px;
-    width: max-content;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
     min-height: 0;
-    overflow: visible;
+    overflow: auto;
   }
 
-  .outbreak-list,
+  .outbreak-list {
+    max-height: 220px;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
   .detail-panel {
-    max-height: min(56svh, 620px);
+    max-height: 240px;
     min-height: 0;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
