@@ -187,6 +187,20 @@
   text-decoration: underline;
 }
 
+.map-credit {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.map-credit a {
+  margin-top: 0;
+  color: #475569;
+}
+
 .bottom-overlay {
   position: absolute;
   left: 16px;
@@ -594,6 +608,14 @@
   .featured-stats {
     grid-template-columns: 1fr;
   }
+
+  .author-copy {
+    display: none;
+  }
+
+  .map-credit {
+    font-size: 0.74rem;
+  }
 }
 
 @media (max-width: 540px) {
@@ -619,5 +641,65 @@
 
   .cluster-chip {
     padding: 9px 10px;
+  }
+}
+
+@media (max-height: 820px) {
+  .top-overlay {
+    gap: 10px;
+  }
+
+  .brand-card,
+  .author-card,
+  .stat-pill,
+  .info-overlay,
+  .legend-overlay,
+  .featured-overlay {
+    padding: 12px 14px;
+  }
+
+  .brand-card p,
+  .info-copy,
+  .featured-story {
+    margin-bottom: 0;
+    font-size: 0.88rem;
+  }
+
+  .featured-stats {
+    gap: 8px;
+  }
+
+  .cluster-switcher {
+    max-height: 152px;
+    overflow: auto;
+    padding-right: 2px;
+  }
+}
+
+@media (max-height: 700px) {
+  .brand-card p,
+  .info-copy,
+  .legend-overlay,
+  .author-copy,
+  .featured-story {
+    display: none;
+  }
+
+  .bottom-overlay {
+    bottom: 38px;
+    gap: 10px;
+  }
+
+  .map-credit {
+    display: none;
+  }
+
+  .info-overlay,
+  .featured-overlay {
+    padding: 12px;
+  }
+
+  .cluster-switcher {
+    max-height: 116px;
   }
 }

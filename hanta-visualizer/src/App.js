@@ -207,6 +207,14 @@ function App() {
           <a href="https://github.com/valentinaschiavon99" target="_blank" rel="noreferrer">
             github.com/valentinaschiavon99
           </a>
+          <div className="map-credit">
+            <span>Map:</span>
+            <a href="https://leafletjs.com" target="_blank" rel="noreferrer">Leaflet</a>
+            <span>·</span>
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>
+            <span>·</span>
+            <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>
+          </div>
         </div>
       </div>
 
@@ -299,12 +307,12 @@ function App() {
         zoom={MAP_ZOOM}
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
+        attributionControl={false}
         className="signal-map"
       >
         <MapViewportController selectedMarker={featuredMarker} />
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
-          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
         />
         {markers.map((m, i) => (
           <CircleMarker
