@@ -13,17 +13,29 @@ L.Icon.Default.mergeOptions({
 
 function App() {
   const [markers, setMarkers] = useState([]);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     // Carichiamo il file generato dallo script Python
     fetch('./outbreak.json')
       .then(response => response.json())
       .then(data => {
+        if (!Array.isArray(data)) {
+          setMarkers([]);
+          setLoadError('Formato dati non valido');
+          return;
+        }
+
         // Teniamo solo le news che hanno le coordinate
         const geocoded = data.filter(item => item.coordinates);
+        setLoadError('');
         setMarkers(geocoded);
       })
-      .catch(error => console.error("Errore caricamento dati:", error));
+      .catch(error => {
+        console.error("Errore caricamento dati:", error);
+        setMarkers([]);
+        setLoadError('Impossibile caricare i dati');
+      });
   }, []);
 
   return (
@@ -34,6 +46,7 @@ function App() {
       }}>
         <h2 style={{ margin: 0, color: '#b91c1c' }}>⚠️ HantaWatch Live</h2>
         <small>Punti geolocalizzati: {markers.length}</small>
+        {loadError && <div style={{ marginTop: '4px', color: '#991b1b' }}>{loadError}</div>}
       </div>
 
       <MapContainer center={[20, 0]} zoom={2} style={{ height: '100%', width: '100%' }}>
