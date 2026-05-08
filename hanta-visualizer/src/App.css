@@ -936,6 +936,26 @@
   }
 }
 
+@media (max-width: 920px) {
+  .side-panel {
+    overflow: auto;
+  }
+
+  .side-panel-body {
+    grid-template-columns: 1fr;
+    overflow: auto;
+    align-content: start;
+    padding-right: 2px;
+  }
+
+  .outbreak-list,
+  .detail-panel,
+  .detail-report-list {
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 @media (max-width: 540px) {
   .app-shell {
     height: 100svh;
