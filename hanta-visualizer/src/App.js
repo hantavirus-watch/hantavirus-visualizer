@@ -421,7 +421,7 @@ function App() {
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
         />
-        {markers.map((m, i) => (
+        {filteredMarkers.map((m, i) => (
           <CircleMarker
             key={i}
             center={m.coordinates}
