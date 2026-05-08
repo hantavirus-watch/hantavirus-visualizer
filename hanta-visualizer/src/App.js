@@ -54,11 +54,25 @@ function getMarkerClassName(reportCount, isSelected) {
   ].filter(Boolean).join(' ');
 }
 
+function formatPublishedDate(publishedAt) {
+  const publishedDate = new Date(publishedAt);
+
+  if (Number.isNaN(publishedDate.getTime())) {
+    return 'Date unavailable';
+  }
+
+  return publishedDate.toLocaleDateString();
+}
+
 function MapViewportController({ selectedMarker }) {
   const map = useMap();
 
   useEffect(() => {
     if (!selectedMarker) {
+      map.flyTo(MAP_CENTER, MAP_ZOOM, {
+        animate: true,
+        duration: 1,
+      });
       return;
     }
 
@@ -96,7 +110,12 @@ function buildLocationMarkers(data) {
       });
     });
 
-  return Array.from(groupedLocations.values()).sort((left, right) => right.reportCount - left.reportCount);
+  return Array.from(groupedLocations.values())
+    .map(location => ({
+      ...location,
+      reports: [...location.reports].sort((left, right) => new Date(right.published) - new Date(left.published)),
+    }))
+    .sort((left, right) => right.reportCount - left.reportCount);
 }
 
 // Fix marker icons in React Leaflet
@@ -110,6 +129,8 @@ L.Icon.Default.mergeOptions({
 function App() {
   const [markers, setMarkers] = useState([]);
   const [selectedMarkerId, setSelectedMarkerId] = useState('');
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [severityFilter, setSeverityFilter] = useState('all');
   const [totalReports, setTotalReports] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -157,8 +178,15 @@ function App() {
     return () => window.clearInterval(intervalId);
   }, [outbreakDataUrl]);
 
+  const filteredMarkers = markers.filter(marker => {
+    const matchesLocation = locationFilter === 'all' || marker.locationName === locationFilter;
+    const matchesSeverity = severityFilter === 'all' || getSeverityKey(marker.reportCount) === severityFilter;
+
+    return matchesLocation && matchesSeverity;
+  });
+
   useEffect(() => {
-    if (!markers.length) {
+    if (!filteredMarkers.length) {
       if (selectedMarkerId) {
         setSelectedMarkerId('');
       }
@@ -166,16 +194,17 @@ function App() {
       return;
     }
 
-    const hasSelectedMarker = markers.some(marker => marker.id === selectedMarkerId);
+    const hasSelectedMarker = filteredMarkers.some(marker => marker.id === selectedMarkerId);
 
     if (!hasSelectedMarker) {
-      setSelectedMarkerId(markers[0].id);
+      setSelectedMarkerId(filteredMarkers[0].id);
     }
-  }, [markers, selectedMarkerId]);
+  }, [filteredMarkers, selectedMarkerId]);
 
   const geolocatedReports = markers.reduce((reportCount, marker) => reportCount + marker.reportCount, 0);
-  const featuredMarker = markers.find(marker => marker.id === selectedMarkerId) || markers[0] || null;
-  const topClusters = markers.slice(0, 4);
+  const filteredReportCount = filteredMarkers.reduce((reportCount, marker) => reportCount + marker.reportCount, 0);
+  const featuredMarker = filteredMarkers.find(marker => marker.id === selectedMarkerId) || filteredMarkers[0] || null;
+  const locationOptions = Array.from(new Set(markers.map(marker => marker.locationName))).sort((left, right) => left.localeCompare(right));
 
   return (
     <div className="app-shell">
@@ -241,65 +270,143 @@ function App() {
           </div>
         </div>
 
-        <div className="featured-overlay glass-card">
-          <div className="featured-header">
+        <aside className="side-panel glass-card">
+          <div className="panel-header">
             <div>
-              <div className="featured-eyebrow">Featured cluster</div>
-              <h2 className="featured-title">{featuredMarker ? featuredMarker.locationName : 'No active cluster'}</h2>
+              <div className="featured-eyebrow">Outbreak panel</div>
+              <h2 className="panel-title">List and detail</h2>
             </div>
-            {featuredMarker && (
-              <span className={`severity-pill severity-pill--${getSeverityKey(featuredMarker.reportCount)}`}>
-                {getSeverityLabel(featuredMarker.reportCount)}
-              </span>
+            <div className="panel-summary">{filteredMarkers.length} shown</div>
+          </div>
+
+          <div className="filter-grid">
+            <label className="filter-field">
+              <span>Country / region</span>
+              <select value={locationFilter} onChange={event => setLocationFilter(event.target.value)}>
+                <option value="all">All</option>
+                {locationOptions.map(location => (
+                  <option key={location} value={location}>{location}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="filter-field">
+              <span>Severity</span>
+              <select value={severityFilter} onChange={event => setSeverityFilter(event.target.value)}>
+                <option value="all">All</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="panel-meta-row">
+            <span>{filteredReportCount} mapped reports in view</span>
+            {(locationFilter !== 'all' || severityFilter !== 'all') && (
+              <button
+                type="button"
+                className="text-reset-button"
+                onClick={() => {
+                  setLocationFilter('all');
+                  setSeverityFilter('all');
+                }}
+              >
+                Reset filters
+              </button>
             )}
           </div>
 
-          {featuredMarker ? (
-            <>
-              <p className="featured-story">{featuredMarker.reports[0].title}</p>
-
-              <div className="featured-stats">
-                <div>
-                  <strong>{featuredMarker.reportCount}</strong>
-                  <span>clustered reports</span>
-                </div>
-                <div>
-                  <strong>{featuredMarker.locationName}</strong>
-                  <span>active focus</span>
-                </div>
-              </div>
-
-              <div className="featured-actions">
-                <a
-                  className="action-button action-button--primary"
-                  href={featuredMarker.reports[0].link}
-                  target="_blank"
-                  rel="noreferrer"
+          <div className="side-panel-body">
+            <div className="outbreak-list">
+              {filteredMarkers.length ? filteredMarkers.map(cluster => (
+                <button
+                  key={cluster.id}
+                  type="button"
+                  className={`outbreak-item${cluster.id === selectedMarkerId ? ' is-selected' : ''}`}
+                  onClick={() => setSelectedMarkerId(cluster.id)}
                 >
-                  Open latest report
-                </a>
-              </div>
-
-              <div className="cluster-switcher">
-                {topClusters.map(cluster => (
-                  <button
-                    key={cluster.id}
-                    type="button"
-                    className={`cluster-chip${cluster.id === selectedMarkerId ? ' is-selected' : ''}`}
-                    onClick={() => setSelectedMarkerId(cluster.id)}
-                  >
-                    <span className="cluster-chip__label">{cluster.locationName}</span>
-                    <span className={`cluster-chip__count cluster-chip__count--${getSeverityKey(cluster.reportCount)}`}>
-                      {cluster.reportCount}
+                  <div className="outbreak-item__top">
+                    <span className="outbreak-item__name">{cluster.locationName}</span>
+                    <span className={`severity-pill severity-pill--${getSeverityKey(cluster.reportCount)}`}>
+                      {getSeverityLabel(cluster.reportCount)}
                     </span>
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : (
-            <p className="featured-story">No geolocated clusters are available yet for the featured panel.</p>
-          )}
-        </div>
+                  </div>
+                  <div className="outbreak-item__meta">
+                    <span>{cluster.reportCount} reports</span>
+                    <span>{cluster.reports[0].source}</span>
+                  </div>
+                </button>
+              )) : (
+                <div className="empty-panel-state">
+                  <strong>No outbreaks found.</strong>
+                  <span>Try widening the country or severity filters.</span>
+                </div>
+              )}
+            </div>
+
+            <div className="detail-panel">
+              {featuredMarker ? (
+                <>
+                  <div className="featured-header">
+                    <div>
+                      <div className="featured-eyebrow">Selected cluster</div>
+                      <h3 className="featured-title">{featuredMarker.locationName}</h3>
+                    </div>
+                    <span className={`severity-pill severity-pill--${getSeverityKey(featuredMarker.reportCount)}`}>
+                      {getSeverityLabel(featuredMarker.reportCount)}
+                    </span>
+                  </div>
+
+                  <p className="featured-story">{featuredMarker.reports[0].title}</p>
+
+                  <div className="featured-stats">
+                    <div>
+                      <strong>{featuredMarker.reportCount}</strong>
+                      <span>clustered reports</span>
+                    </div>
+                    <div>
+                      <strong>{featuredMarker.locationName}</strong>
+                      <span>active focus</span>
+                    </div>
+                  </div>
+
+                  <div className="featured-actions">
+                    <a
+                      className="action-button action-button--primary"
+                      href={featuredMarker.reports[0].link}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open latest report
+                    </a>
+                  </div>
+
+                  <div className="detail-report-list">
+                    {featuredMarker.reports.map((report, index) => (
+                      <a
+                        key={`${report.link}-${index}`}
+                        className="detail-report-link"
+                        href={report.link}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <span className="detail-report-source">{report.source}</span>
+                        <span className="detail-report-title">{report.title}</span>
+                        <span className="detail-report-date">{formatPublishedDate(report.published)}</span>
+                      </a>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="empty-panel-state detail-empty-state">
+                  <strong>No active cluster</strong>
+                  <span>Select a different filter combination or clear the filters.</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </aside>
       </div>
 
       <MapContainer
