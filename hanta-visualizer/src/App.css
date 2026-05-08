@@ -19,6 +19,7 @@
   height: 100vh;
   width: 100%;
   overflow: hidden;
+  isolation: isolate;
   color: var(--ink);
   font-family: var(--font-sans);
   background:
@@ -33,6 +34,7 @@
   position: absolute;
   pointer-events: none;
   border-radius: 999px;
+  z-index: 0;
 }
 
 .app-shell::before {
@@ -76,7 +78,7 @@
   top: 16px;
   left: 16px;
   right: 16px;
-  z-index: 1000;
+  z-index: 2;
   display: grid;
   grid-template-columns: minmax(260px, 380px) auto minmax(240px, 320px);
   gap: 12px;
@@ -207,7 +209,7 @@
   left: 16px;
   right: 16px;
   bottom: 50px;
-  z-index: 1000;
+  z-index: 2;
   display: grid;
   grid-template-columns: minmax(280px, 360px) minmax(360px, 520px);
   gap: 16px;
@@ -349,8 +351,10 @@
 .side-panel {
   justify-self: end;
   width: min(520px, 100%);
+  max-height: min(62vh, 680px);
   display: grid;
   gap: 14px;
+  overflow: hidden;
 }
 
 .filter-grid {
@@ -400,6 +404,7 @@
   display: grid;
   gap: 12px;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  min-height: 0;
 }
 
 .outbreak-list,
@@ -454,6 +459,9 @@
   display: grid;
   gap: 12px;
   align-content: start;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
 }
 
 .severity-pill {
@@ -553,8 +561,26 @@
 }
 
 .signal-map {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   background: #dbe6ee;
   font-family: var(--font-sans);
+}
+
+.signal-map .leaflet-container,
+.signal-map.leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+.signal-map .leaflet-pane,
+.signal-map .leaflet-control-container {
+  z-index: 1;
+}
+
+.signal-map .leaflet-popup-pane {
+  z-index: 3;
 }
 
 .signal-map .leaflet-popup-content-wrapper,
@@ -574,6 +600,24 @@
 
 .signal-map .leaflet-popup-content a {
   color: #b91c1c;
+}
+
+.signal-map .leaflet-popup-close-button {
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  color: #475569;
+  background: rgba(241, 245, 249, 0.96);
+  font-size: 20px;
+  line-height: 24px;
+  text-align: center;
+}
+
+.signal-map .leaflet-popup-close-button:hover {
+  color: #102135;
+  background: #ffffff;
 }
 
 .signal-marker {
@@ -620,6 +664,7 @@
   .side-panel {
     justify-self: stretch;
     width: auto;
+    max-height: min(52vh, 560px);
   }
 
   .side-panel-body {
@@ -640,7 +685,7 @@
   }
 
   .bottom-overlay {
-    bottom: 44px;
+    bottom: 16px;
     gap: 12px;
   }
 
@@ -659,6 +704,10 @@
   .legend-overlay,
   .side-panel {
     padding: 14px;
+  }
+
+  .side-panel {
+    max-height: min(46vh, 480px);
   }
 
   .status-row {
@@ -761,6 +810,10 @@
   .info-overlay,
   .side-panel {
     padding: 12px;
+  }
+
+  .side-panel {
+    max-height: min(42vh, 360px);
   }
 
   .outbreak-list,

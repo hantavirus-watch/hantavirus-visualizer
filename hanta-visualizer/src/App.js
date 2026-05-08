@@ -415,6 +415,7 @@ function App() {
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
         attributionControl={false}
+        closePopupOnClick={true}
         className="signal-map"
       >
         <MapViewportController selectedMarker={featuredMarker} />
@@ -438,7 +439,7 @@ function App() {
               click: () => setSelectedMarkerId(m.id),
             }}
           >
-            <Popup>
+            <Popup closeButton autoClose closeOnEscapeKey keepInView>
               <strong>{m.locationName}</strong><br/>
               Severity: {getSeverityLabel(m.reportCount)}<br/>
               Reports: {m.reportCount}<br/>
