@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/hantavirus-visualizer/static/css/main.358142cb.css",
+    "main.css": "/hantavirus-visualizer/static/css/main.4925fc57.css",
     "main.js": "/hantavirus-visualizer/static/js/main.8edebb72.js",
     "static/js/453.a3fbf7a8.chunk.js": "/hantavirus-visualizer/static/js/453.a3fbf7a8.chunk.js",
     "index.html": "/hantavirus-visualizer/index.html",
-    "main.358142cb.css.map": "/hantavirus-visualizer/static/css/main.358142cb.css.map",
+    "main.4925fc57.css.map": "/hantavirus-visualizer/static/css/main.4925fc57.css.map",
     "main.8edebb72.js.map": "/hantavirus-visualizer/static/js/main.8edebb72.js.map",
     "453.a3fbf7a8.chunk.js.map": "/hantavirus-visualizer/static/js/453.a3fbf7a8.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.358142cb.css",
+    "static/css/main.4925fc57.css",
     "static/js/main.8edebb72.js"
   ]
 }
