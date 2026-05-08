@@ -19,7 +19,6 @@ function App() {
     fetch('./outbreak.json')
       .then(response => response.json())
       .then(data => {
-        console.log('Dati ricevuti:', data);
         // Teniamo solo le news che hanno le coordinate
         const geocoded = data.filter(item => item.coordinates);
         setMarkers(geocoded);
