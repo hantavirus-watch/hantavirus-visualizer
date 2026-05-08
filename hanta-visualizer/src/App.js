@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet';
+import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
 import './App.css';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -7,6 +7,7 @@ import L from 'leaflet';
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 const MAP_CENTER = [20, 0];
 const MAP_ZOOM = 2;
+const MAP_FOCUS_ZOOM = 4;
 
 function getSeverityColor(reportCount) {
   if (reportCount >= 5) {
@@ -32,6 +33,44 @@ function getSeverityLabel(reportCount) {
   return 'Low activity';
 }
 
+function getSeverityKey(reportCount) {
+  if (reportCount >= 5) {
+    return 'high';
+  }
+
+  if (reportCount >= 3) {
+    return 'medium';
+  }
+
+  return 'low';
+}
+
+function getMarkerClassName(reportCount, isSelected) {
+  const severityKey = getSeverityKey(reportCount);
+  return [
+    'signal-marker',
+    `signal-marker--${severityKey}`,
+    isSelected ? 'signal-marker--selected' : '',
+  ].filter(Boolean).join(' ');
+}
+
+function MapViewportController({ selectedMarker }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!selectedMarker) {
+      return;
+    }
+
+    map.flyTo(selectedMarker.coordinates, MAP_FOCUS_ZOOM, {
+      animate: true,
+      duration: 1.2,
+    });
+  }, [map, selectedMarker]);
+
+  return null;
+}
+
 function buildLocationMarkers(data) {
   const groupedLocations = new Map();
 
@@ -49,6 +88,7 @@ function buildLocationMarkers(data) {
       }
 
       groupedLocations.set(locationKey, {
+        id: locationKey,
         coordinates: [lat, lng],
         locationName: item.location_name || 'Unknown location',
         reportCount: 1,
@@ -69,6 +109,7 @@ L.Icon.Default.mergeOptions({
 
 function App() {
   const [markers, setMarkers] = useState([]);
+  const [selectedMarkerId, setSelectedMarkerId] = useState('');
   const [totalReports, setTotalReports] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -116,13 +157,33 @@ function App() {
     return () => window.clearInterval(intervalId);
   }, [outbreakDataUrl]);
 
+  useEffect(() => {
+    if (!markers.length) {
+      if (selectedMarkerId) {
+        setSelectedMarkerId('');
+      }
+
+      return;
+    }
+
+    const hasSelectedMarker = markers.some(marker => marker.id === selectedMarkerId);
+
+    if (!hasSelectedMarker) {
+      setSelectedMarkerId(markers[0].id);
+    }
+  }, [markers, selectedMarkerId]);
+
+  const geolocatedReports = markers.reduce((reportCount, marker) => reportCount + marker.reportCount, 0);
+  const featuredMarker = markers.find(marker => marker.id === selectedMarkerId) || markers[0] || null;
+  const topClusters = markers.slice(0, 4);
+
   return (
     <div className="app-shell">
       <div className="top-overlay">
         <div className="brand-card glass-card">
-          <div className="brand-eyebrow">Live global tracker</div>
+          <div className="brand-eyebrow">Signal-led global tracker</div>
           <h1>HantaWatch</h1>
-          <p>Minimal outbreak map with clustered activity signals.</p>
+          <p>Editorial-style outbreak mapping inspired by HantavirusMap, tuned for your live feed.</p>
         </div>
 
         <div className="status-row">
@@ -133,6 +194,10 @@ function App() {
           <div className="stat-pill glass-card">
             <span className="stat-value">{markers.length}</span>
             <span className="stat-label">clusters</span>
+          </div>
+          <div className="stat-pill glass-card">
+            <span className="stat-value">{geolocatedReports}</span>
+            <span className="stat-label">mapped</span>
           </div>
         </div>
 
@@ -145,27 +210,98 @@ function App() {
         </div>
       </div>
 
-      <div className="info-overlay glass-card">
-        <div className="info-title-row">
-          <h2>Signal map</h2>
-          {isLoading && <span className="info-badge loading">Loading</span>}
-          {!isLoading && !loadError && <span className="info-badge live">Live</span>}
-          {loadError && <span className="info-badge error">Error</span>}
+      <div className="bottom-overlay">
+        <div className="bottom-column">
+          <div className="info-overlay glass-card">
+            <div className="info-title-row">
+              <h2>Signal map</h2>
+              {isLoading && <span className="info-badge loading">Loading</span>}
+              {!isLoading && !loadError && <span className="info-badge live">Live</span>}
+              {loadError && <span className="info-badge error">Error</span>}
+            </div>
+            <p className="info-copy">Yellow, orange and red signals intensify as more reports cluster around the same geolocated area.</p>
+            <div className="info-meta">Auto-refresh every 30 minutes</div>
+            {lastUpdated && <div className="info-meta">Last update: {lastUpdated.toLocaleString()}</div>}
+            {loadError && <div className="info-error">{loadError}</div>}
+          </div>
+
+          <div className="legend-overlay glass-card">
+            <div className="legend-title">Map intensity</div>
+            <div className="legend-item"><span className="legend-dot yellow"></span>Yellow: 1-2 reports</div>
+            <div className="legend-item"><span className="legend-dot orange"></span>Orange: 3-4 reports</div>
+            <div className="legend-item"><span className="legend-dot red"></span>Red: 5+ reports</div>
+          </div>
         </div>
-        <p className="info-copy">Yellow, orange and red indicate denser outbreak reporting around the same geolocated area.</p>
-        <div className="info-meta">Auto-refresh every 30 minutes</div>
-        {lastUpdated && <div className="info-meta">Last update: {lastUpdated.toLocaleString()}</div>}
-        {loadError && <div className="info-error">{loadError}</div>}
+
+        <div className="featured-overlay glass-card">
+          <div className="featured-header">
+            <div>
+              <div className="featured-eyebrow">Featured cluster</div>
+              <h2 className="featured-title">{featuredMarker ? featuredMarker.locationName : 'No active cluster'}</h2>
+            </div>
+            {featuredMarker && (
+              <span className={`severity-pill severity-pill--${getSeverityKey(featuredMarker.reportCount)}`}>
+                {getSeverityLabel(featuredMarker.reportCount)}
+              </span>
+            )}
+          </div>
+
+          {featuredMarker ? (
+            <>
+              <p className="featured-story">{featuredMarker.reports[0].title}</p>
+
+              <div className="featured-stats">
+                <div>
+                  <strong>{featuredMarker.reportCount}</strong>
+                  <span>clustered reports</span>
+                </div>
+                <div>
+                  <strong>{featuredMarker.locationName}</strong>
+                  <span>active focus</span>
+                </div>
+              </div>
+
+              <div className="featured-actions">
+                <a
+                  className="action-button action-button--primary"
+                  href={featuredMarker.reports[0].link}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open latest report
+                </a>
+              </div>
+
+              <div className="cluster-switcher">
+                {topClusters.map(cluster => (
+                  <button
+                    key={cluster.id}
+                    type="button"
+                    className={`cluster-chip${cluster.id === selectedMarkerId ? ' is-selected' : ''}`}
+                    onClick={() => setSelectedMarkerId(cluster.id)}
+                  >
+                    <span className="cluster-chip__label">{cluster.locationName}</span>
+                    <span className={`cluster-chip__count cluster-chip__count--${getSeverityKey(cluster.reportCount)}`}>
+                      {cluster.reportCount}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="featured-story">No geolocated clusters are available yet for the featured panel.</p>
+          )}
+        </div>
       </div>
 
-      <div className="legend-overlay glass-card">
-        <div className="legend-title">Map intensity</div>
-        <div className="legend-item"><span className="legend-dot yellow"></span>Yellow: 1-2 reports</div>
-        <div className="legend-item"><span className="legend-dot orange"></span>Orange: 3-4 reports</div>
-        <div className="legend-item"><span className="legend-dot red"></span>Red: 5+ reports</div>
-      </div>
-
-      <MapContainer center={MAP_CENTER} zoom={MAP_ZOOM} style={{ height: '100%', width: '100%' }} zoomControl={false}>
+      <MapContainer
+        center={MAP_CENTER}
+        zoom={MAP_ZOOM}
+        style={{ height: '100%', width: '100%' }}
+        zoomControl={false}
+        className="signal-map"
+      >
+        <MapViewportController selectedMarker={featuredMarker} />
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
           attribution='&copy; OpenStreetMap contributors &copy; CARTO'
@@ -174,13 +310,17 @@ function App() {
           <CircleMarker
             key={i}
             center={m.coordinates}
-            radius={Math.min(24, 8 + m.reportCount * 2)}
+            radius={Math.min(26, 8 + m.reportCount * 2.4)}
             pathOptions={{
-              color: getSeverityColor(m.reportCount),
+              className: getMarkerClassName(m.reportCount, m.id === selectedMarkerId),
+              color: m.id === selectedMarkerId ? '#ffffff' : getSeverityColor(m.reportCount),
               fillColor: getSeverityColor(m.reportCount),
-              fillOpacity: 0.78,
-              weight: 1,
+              fillOpacity: m.id === selectedMarkerId ? 0.92 : 0.78,
+              weight: m.id === selectedMarkerId ? 2.8 : 1.2,
               opacity: 1,
+            }}
+            eventHandlers={{
+              click: () => setSelectedMarkerId(m.id),
             }}
           >
             <Popup>
