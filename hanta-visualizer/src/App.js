@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet';
+import './App.css';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -116,70 +117,52 @@ function App() {
   }, [outbreakDataUrl]);
 
   return (
-    <div style={{ height: '100vh', width: '100%', background: '#f8fafc' }}>
-      <div style={{
-        position: 'absolute',
-        top: 16,
-        left: 16,
-        zIndex: 1000,
-        background: 'rgba(255, 255, 255, 0.94)',
-        padding: '14px 16px',
-        borderRadius: '16px',
-        boxShadow: '0 12px 30px rgba(15, 23, 42, 0.16)',
-        backdropFilter: 'blur(14px)',
-        minWidth: '220px',
-      }}>
-        <h2 style={{ margin: 0, color: '#0f172a', fontSize: '1.05rem' }}>HantaWatch Live</h2>
-        {isLoading && <div style={{ marginTop: '4px', color: '#92400e' }}>Loading outbreak data...</div>}
-        <small style={{ display: 'block', marginTop: '6px' }}>Total reports: {totalReports}</small>
-        <small style={{ display: 'block' }}>Geolocated clusters: {markers.length}</small>
-        <small style={{ display: 'block' }}>Auto-refresh: every 30 minutes</small>
-        {lastUpdated && (
-          <small style={{ display: 'block' }}>
-            Last update: {lastUpdated.toLocaleString()}
-          </small>
-        )}
-        {loadError && <div style={{ marginTop: '4px', color: '#991b1b' }}>{loadError}</div>}
+    <div className="app-shell">
+      <div className="top-overlay">
+        <div className="brand-card glass-card">
+          <div className="brand-eyebrow">Live global tracker</div>
+          <h1>HantaWatch</h1>
+          <p>Minimal outbreak map with clustered activity signals.</p>
+        </div>
+
+        <div className="status-row">
+          <div className="stat-pill glass-card">
+            <span className="stat-value">{totalReports}</span>
+            <span className="stat-label">reports</span>
+          </div>
+          <div className="stat-pill glass-card">
+            <span className="stat-value">{markers.length}</span>
+            <span className="stat-label">clusters</span>
+          </div>
+        </div>
+
+        <div className="author-card glass-card">
+          <div className="author-name">Valentina Schiavon</div>
+          <div className="author-copy">Copyright {new Date().getFullYear()} Valentina Schiavon</div>
+          <a href="https://github.com/valentinaschiavon99" target="_blank" rel="noreferrer">
+            github.com/valentinaschiavon99
+          </a>
+        </div>
       </div>
 
-      <div style={{
-        position: 'absolute',
-        left: 16,
-        bottom: 16,
-        zIndex: 1000,
-        background: 'rgba(255, 255, 255, 0.94)',
-        padding: '12px 14px',
-        borderRadius: '14px',
-        boxShadow: '0 12px 30px rgba(15, 23, 42, 0.16)',
-        backdropFilter: 'blur(14px)',
-        fontSize: '12px',
-        color: '#334155',
-        lineHeight: 1.5,
-      }}>
-        <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>Map intensity</div>
-        <div>Yellow: 1-2 reports</div>
-        <div>Orange: 3-4 reports</div>
-        <div>Red: 5+ reports</div>
+      <div className="info-overlay glass-card">
+        <div className="info-title-row">
+          <h2>Signal map</h2>
+          {isLoading && <span className="info-badge loading">Loading</span>}
+          {!isLoading && !loadError && <span className="info-badge live">Live</span>}
+          {loadError && <span className="info-badge error">Error</span>}
+        </div>
+        <p className="info-copy">Yellow, orange and red indicate denser outbreak reporting around the same geolocated area.</p>
+        <div className="info-meta">Auto-refresh every 30 minutes</div>
+        {lastUpdated && <div className="info-meta">Last update: {lastUpdated.toLocaleString()}</div>}
+        {loadError && <div className="info-error">{loadError}</div>}
       </div>
 
-      <div style={{
-        position: 'absolute',
-        right: 16,
-        top: 16,
-        zIndex: 1000,
-        background: 'rgba(255, 255, 255, 0.94)',
-        padding: '10px 12px',
-        borderRadius: '14px',
-        boxShadow: '0 12px 30px rgba(15, 23, 42, 0.16)',
-        backdropFilter: 'blur(14px)',
-        fontSize: '12px',
-        lineHeight: 1.4,
-      }}>
-        <div style={{ fontWeight: 700, color: '#0f172a' }}>Valentina Schiavon</div>
-        <div>Copyright {new Date().getFullYear()} Valentina Schiavon</div>
-        <a href="https://github.com/valentinaschiavon99" target="_blank" rel="noreferrer" style={{ color: '#b91c1c' }}>
-          github.com/valentinaschiavon99
-        </a>
+      <div className="legend-overlay glass-card">
+        <div className="legend-title">Map intensity</div>
+        <div className="legend-item"><span className="legend-dot yellow"></span>Yellow: 1-2 reports</div>
+        <div className="legend-item"><span className="legend-dot orange"></span>Orange: 3-4 reports</div>
+        <div className="legend-item"><span className="legend-dot red"></span>Red: 5+ reports</div>
       </div>
 
       <MapContainer center={MAP_CENTER} zoom={MAP_ZOOM} style={{ height: '100%', width: '100%' }} zoomControl={false}>
