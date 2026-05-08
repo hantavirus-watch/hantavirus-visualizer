@@ -1,0 +1,2 @@
+# No third-party dependencies — scraper uses only Python stdlib
+# (urllib, xml.etree, json, re, datetime, pathlib)
