@@ -976,7 +976,7 @@
 .tg-fab {
   position: fixed;
   bottom: 24px;
-  left: 24px;
+  right: 24px;
   z-index: 9;
   display: inline-flex;
   align-items: center;
