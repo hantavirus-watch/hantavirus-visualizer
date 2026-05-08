@@ -204,7 +204,7 @@
 
 .author-copy {
   margin-top: 4px;
-  color: #334155;
+  color: var(--muted);
 }
 
 .author-card a {
@@ -241,7 +241,7 @@
   bottom: 50px;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(360px, 520px);
+  grid-template-columns: minmax(240px, 300px) 1fr;
   gap: 16px;
   align-items: end;
 }
@@ -407,8 +407,8 @@
 }
 
 .side-panel {
-  justify-self: end;
-  width: min(920px, 78vw);
+  justify-self: stretch;
+  width: 100%;
   max-height: min(82svh, 860px);
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr);
