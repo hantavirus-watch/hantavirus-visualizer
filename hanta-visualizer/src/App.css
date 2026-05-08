@@ -769,40 +769,6 @@
   }
 }
 
-  .brand-card,
-  .author-card,
-  .stat-pill,
-  .info-overlay,
-  .legend-overlay,
-  .featured-overlay {
-    border-radius: 18px;
-  }
-
-  .brand-card,
-  .author-card,
-  .info-overlay,
-  .legend-overlay,
-  .featured-overlay {
-    padding: 14px;
-  }
-
-  .status-row {
-    width: 100%;
-  }
-
-  .featured-stats {
-    grid-template-columns: 1fr;
-  }
-
-  .author-copy {
-    display: none;
-  }
-
-  .map-credit {
-    font-size: 0.74rem;
-  }
-}
-
 @media (max-width: 540px) {
   .app-shell {
     height: 100svh;
