@@ -8,6 +8,13 @@ const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 const MAP_CENTER = [20, 0];
 const MAP_ZOOM = 2;
 const MAP_FOCUS_ZOOM = 4;
+const FALLBACK_LOCATIONS = [
+  {
+    locationName: 'Canary Islands',
+    coordinates: [28.2916, -16.6291],
+    patterns: [/canary islands/i, /canarias/i, /tenerife/i, /gran canaria/i, /las palmas/i],
+  },
+];
 
 function getSeverityColor(reportCount) {
   if (reportCount >= 5) {
@@ -64,6 +71,30 @@ function formatPublishedDate(publishedAt) {
   return publishedDate.toLocaleDateString();
 }
 
+function resolveReportLocation(item) {
+  if (Array.isArray(item.coordinates) && item.coordinates.length === 2) {
+    return {
+      locationName: item.location_name || 'Unknown location',
+      coordinates: item.coordinates,
+    };
+  }
+
+  const searchableText = [item.location_name, item.title, item.link]
+    .filter(Boolean)
+    .join(' ');
+
+  const fallbackLocation = FALLBACK_LOCATIONS.find(entry => entry.patterns.some(pattern => pattern.test(searchableText)));
+
+  if (!fallbackLocation) {
+    return null;
+  }
+
+  return {
+    locationName: fallbackLocation.locationName,
+    coordinates: fallbackLocation.coordinates,
+  };
+}
+
 function MapViewportController({ selectedMarker }) {
   const map = useMap();
 
@@ -88,25 +119,34 @@ function MapViewportController({ selectedMarker }) {
 function buildLocationMarkers(data) {
   const groupedLocations = new Map();
 
-  data
-    .filter(item => Array.isArray(item.coordinates) && item.coordinates.length === 2)
-    .forEach(item => {
-      const [lat, lng] = item.coordinates;
-      const locationKey = `${item.location_name || 'unknown'}:${lat}:${lng}`;
+  data.forEach(item => {
+      const resolvedLocation = resolveReportLocation(item);
+
+      if (!resolvedLocation) {
+        return;
+      }
+
+      const [lat, lng] = resolvedLocation.coordinates;
+      const locationKey = `${resolvedLocation.locationName}:${lat}:${lng}`;
       const existingLocation = groupedLocations.get(locationKey);
+      const resolvedReport = {
+        ...item,
+        location_name: resolvedLocation.locationName,
+        coordinates: resolvedLocation.coordinates,
+      };
 
       if (existingLocation) {
         existingLocation.reportCount += 1;
-        existingLocation.reports.push(item);
+        existingLocation.reports.push(resolvedReport);
         return;
       }
 
       groupedLocations.set(locationKey, {
         id: locationKey,
-        coordinates: [lat, lng],
-        locationName: item.location_name || 'Unknown location',
+        coordinates: resolvedLocation.coordinates,
+        locationName: resolvedLocation.locationName,
         reportCount: 1,
-        reports: [item],
+        reports: [resolvedReport],
       });
     });
 
