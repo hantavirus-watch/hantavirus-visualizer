@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/hantavirus-visualizer/static/css/main.0c5d0fdf.css",
-    "main.js": "/hantavirus-visualizer/static/js/main.c9a111dd.js",
+    "main.css": "/hantavirus-visualizer/static/css/main.f2ff84b8.css",
+    "main.js": "/hantavirus-visualizer/static/js/main.f4e1bf43.js",
     "static/js/453.a3fbf7a8.chunk.js": "/hantavirus-visualizer/static/js/453.a3fbf7a8.chunk.js",
     "index.html": "/hantavirus-visualizer/index.html",
-    "main.0c5d0fdf.css.map": "/hantavirus-visualizer/static/css/main.0c5d0fdf.css.map",
-    "main.c9a111dd.js.map": "/hantavirus-visualizer/static/js/main.c9a111dd.js.map",
+    "main.f2ff84b8.css.map": "/hantavirus-visualizer/static/css/main.f2ff84b8.css.map",
+    "main.f4e1bf43.js.map": "/hantavirus-visualizer/static/js/main.f4e1bf43.js.map",
     "453.a3fbf7a8.chunk.js.map": "/hantavirus-visualizer/static/js/453.a3fbf7a8.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.0c5d0fdf.css",
-    "static/js/main.c9a111dd.js"
+    "static/css/main.f2ff84b8.css",
+    "static/js/main.f4e1bf43.js"
   ]
 }
