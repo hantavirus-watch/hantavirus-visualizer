@@ -528,6 +528,19 @@ function App() {
       </a>
 
       <a
+        className="share-fab glass-card"
+        href="https://twitter.com/intent/tweet?text=Track%20hantavirus%20outbreaks%20worldwide%20in%20real%20time%20%F0%9F%97%BA%EF%B8%8F&url=https%3A%2F%2Fhantavirus-watch.github.io%2Fhantavirus-visualizer"
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Share on X / Twitter"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.258 5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+        <span>Share</span>
+      </a>
+
+      <a
         className="tg-fab glass-card"
         href="https://t.me/hantavirus_watch_bot"
         target="_blank"
