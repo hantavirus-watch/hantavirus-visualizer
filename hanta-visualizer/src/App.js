@@ -1,9 +1,62 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
+const MAP_CENTER = [20, 0];
+const MAP_ZOOM = 2;
+
+function getSeverityColor(reportCount) {
+  if (reportCount >= 5) {
+    return '#dc2626';
+  }
+
+  if (reportCount >= 3) {
+    return '#f97316';
+  }
+
+  return '#facc15';
+}
+
+function getSeverityLabel(reportCount) {
+  if (reportCount >= 5) {
+    return 'High activity';
+  }
+
+  if (reportCount >= 3) {
+    return 'Medium activity';
+  }
+
+  return 'Low activity';
+}
+
+function buildLocationMarkers(data) {
+  const groupedLocations = new Map();
+
+  data
+    .filter(item => Array.isArray(item.coordinates) && item.coordinates.length === 2)
+    .forEach(item => {
+      const [lat, lng] = item.coordinates;
+      const locationKey = `${item.location_name || 'unknown'}:${lat}:${lng}`;
+      const existingLocation = groupedLocations.get(locationKey);
+
+      if (existingLocation) {
+        existingLocation.reportCount += 1;
+        existingLocation.reports.push(item);
+        return;
+      }
+
+      groupedLocations.set(locationKey, {
+        coordinates: [lat, lng],
+        locationName: item.location_name || 'Unknown location',
+        reportCount: 1,
+        reports: [item],
+      });
+    });
+
+  return Array.from(groupedLocations.values()).sort((left, right) => right.reportCount - left.reportCount);
+}
 
 // Fix marker icons in React Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -40,11 +93,9 @@ function App() {
           return;
         }
 
-        // Keep only reports that include coordinates
-        const geocoded = data.filter(item => item.coordinates);
         setTotalReports(data.length);
         setLoadError('');
-        setMarkers(geocoded);
+        setMarkers(buildLocationMarkers(data));
         setLastUpdated(new Date());
         setIsLoading(false);
       })
@@ -65,15 +116,23 @@ function App() {
   }, [outbreakDataUrl]);
 
   return (
-    <div style={{ height: '100vh', width: '100%' }}>
-      <div style={{ 
-        position: 'absolute', top: 10, left: 50, zIndex: 1000, 
-        background: 'white', padding: '10px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.3)' 
+    <div style={{ height: '100vh', width: '100%', background: '#f8fafc' }}>
+      <div style={{
+        position: 'absolute',
+        top: 16,
+        left: 16,
+        zIndex: 1000,
+        background: 'rgba(255, 255, 255, 0.94)',
+        padding: '14px 16px',
+        borderRadius: '16px',
+        boxShadow: '0 12px 30px rgba(15, 23, 42, 0.16)',
+        backdropFilter: 'blur(14px)',
+        minWidth: '220px',
       }}>
-        <h2 style={{ margin: 0, color: '#b91c1c' }}>⚠️ HantaWatch Live</h2>
+        <h2 style={{ margin: 0, color: '#0f172a', fontSize: '1.05rem' }}>HantaWatch Live</h2>
         {isLoading && <div style={{ marginTop: '4px', color: '#92400e' }}>Loading outbreak data...</div>}
-        <small style={{ display: 'block' }}>Total reports: {totalReports}</small>
-        <small>Geolocated points: {markers.length}</small>
+        <small style={{ display: 'block', marginTop: '6px' }}>Total reports: {totalReports}</small>
+        <small style={{ display: 'block' }}>Geolocated clusters: {markers.length}</small>
         <small style={{ display: 'block' }}>Auto-refresh: every 30 minutes</small>
         {lastUpdated && (
           <small style={{ display: 'block' }}>
@@ -85,35 +144,69 @@ function App() {
 
       <div style={{
         position: 'absolute',
-        right: 16,
+        left: 16,
         bottom: 16,
         zIndex: 1000,
         background: 'rgba(255, 255, 255, 0.94)',
+        padding: '12px 14px',
+        borderRadius: '14px',
+        boxShadow: '0 12px 30px rgba(15, 23, 42, 0.16)',
+        backdropFilter: 'blur(14px)',
+        fontSize: '12px',
+        color: '#334155',
+        lineHeight: 1.5,
+      }}>
+        <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>Map intensity</div>
+        <div>Yellow: 1-2 reports</div>
+        <div>Orange: 3-4 reports</div>
+        <div>Red: 5+ reports</div>
+      </div>
+
+      <div style={{
+        position: 'absolute',
+        right: 16,
+        top: 16,
+        zIndex: 1000,
+        background: 'rgba(255, 255, 255, 0.94)',
         padding: '10px 12px',
-        borderRadius: '10px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+        borderRadius: '14px',
+        boxShadow: '0 12px 30px rgba(15, 23, 42, 0.16)',
+        backdropFilter: 'blur(14px)',
         fontSize: '12px',
         lineHeight: 1.4,
       }}>
-        <div>Created by Valentina Schiavon</div>
+        <div style={{ fontWeight: 700, color: '#0f172a' }}>Valentina Schiavon</div>
         <div>Copyright {new Date().getFullYear()} Valentina Schiavon</div>
-        <a href="https://github.com/valentinaschiavon99" target="_blank" rel="noreferrer">
+        <a href="https://github.com/valentinaschiavon99" target="_blank" rel="noreferrer" style={{ color: '#b91c1c' }}>
           github.com/valentinaschiavon99
         </a>
       </div>
 
-      <MapContainer center={[20, 0]} zoom={2} style={{ height: '100%', width: '100%' }}>
+      <MapContainer center={MAP_CENTER} zoom={MAP_ZOOM} style={{ height: '100%', width: '100%' }} zoomControl={false}>
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
           attribution='&copy; OpenStreetMap contributors &copy; CARTO'
         />
         {markers.map((m, i) => (
-          <Marker key={i} position={m.coordinates}>
+          <CircleMarker
+            key={i}
+            center={m.coordinates}
+            radius={Math.min(24, 8 + m.reportCount * 2)}
+            pathOptions={{
+              color: getSeverityColor(m.reportCount),
+              fillColor: getSeverityColor(m.reportCount),
+              fillOpacity: 0.78,
+              weight: 1,
+              opacity: 1,
+            }}
+          >
             <Popup>
-              <strong>{m.title}</strong><br/>
-              <a href={m.link} target="_blank" rel="noreferrer">Read report</a>
+              <strong>{m.locationName}</strong><br/>
+              Severity: {getSeverityLabel(m.reportCount)}<br/>
+              Reports: {m.reportCount}<br/>
+              <a href={m.reports[0].link} target="_blank" rel="noreferrer">Read latest report</a>
             </Popup>
-          </Marker>
+          </CircleMarker>
         ))}
       </MapContainer>
     </div>
