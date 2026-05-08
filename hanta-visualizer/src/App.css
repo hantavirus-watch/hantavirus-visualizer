@@ -745,6 +745,7 @@
     justify-self: stretch;
     width: auto;
     max-height: min(46vh, 460px);
+    overflow: hidden;
   }
 
   .panel-toggle-wrap {
@@ -757,6 +758,23 @@
 
   .side-panel-body {
     grid-template-columns: 1fr;
+    grid-template-rows: minmax(140px, 40%) minmax(0, 1fr);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .outbreak-list,
+  .detail-panel {
+    max-height: none;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .detail-report-list {
+    max-height: none;
+    overflow: visible;
   }
 }
 
@@ -854,6 +872,10 @@
   .severity-pill {
     white-space: normal;
   }
+
+  .cluster-chip {
+    padding: 9px 10px;
+  }
 }
 
 @media (max-height: 820px) {
@@ -866,7 +888,8 @@
   .stat-pill,
   .info-overlay,
   .legend-overlay,
-  .side-panel {
+  .side-panel,
+  .featured-overlay {
     padding: 12px 14px;
   }
 
@@ -893,13 +916,12 @@
     margin-top: 0;
   }
 
-  .side-panel {
-    max-height: min(44vh, 400px);
+  .featured-stats {
+    gap: 8px;
   }
 
-  .outbreak-list,
-  .detail-report-list {
-    max-height: 220px;
+  .side-panel {
+    max-height: min(44vh, 400px);
   }
 }
 
@@ -928,123 +950,5 @@
 
   .side-panel {
     max-height: min(42vh, 360px);
-  }
-
-  .outbreak-list,
-  .detail-report-list {
-    max-height: 150px;
-  }
-}
-
-@media (max-width: 920px) {
-  .side-panel {
-    overflow: hidden;
-  }
-
-  .side-panel-body {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(140px, 40%) minmax(0, 1fr);
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .outbreak-list,
-  .detail-panel {
-    max-height: none;
-    min-height: 0;
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-
-  .detail-report-list {
-    max-height: none;
-    overflow: visible;
-  }
-}
-
-@media (max-width: 540px) {
-  .app-shell {
-    height: 100svh;
-  }
-
-  .brand-card h1 {
-    font-size: 1.9rem;
-  }
-
-  .status-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .stat-pill {
-    padding: 12px 10px;
-  }
-
-  .stat-value {
-    font-size: 1.45rem;
-  }
-
-  .cluster-chip {
-    padding: 9px 10px;
-  }
-}
-
-@media (max-height: 820px) {
-  .top-overlay {
-    gap: 10px;
-  }
-
-  .brand-card,
-  .author-card,
-  .stat-pill,
-  .info-overlay,
-  .legend-overlay,
-  .featured-overlay {
-    padding: 12px 14px;
-  }
-
-  .brand-card p,
-  .info-copy,
-  .featured-story {
-    margin-bottom: 0;
-    font-size: 0.88rem;
-  }
-
-  .featured-stats {
-    gap: 8px;
-  }
-
-  .outbreak-list,
-  .detail-report-list {
-    max-height: 220px;
-  }
-}
-
-@media (max-height: 700px) {
-  .brand-card p,
-  .info-copy,
-  .legend-overlay,
-  .author-copy,
-  .featured-story {
-    display: none;
-  }
-
-  .bottom-overlay {
-    bottom: 38px;
-    gap: 10px;
-  }
-
-  .map-credit {
-    display: none;
-  }
-
-  .info-overlay,
-  .side-panel {
-    padding: 12px;
-  }
-
-  .outbreak-list,
-  .detail-report-list {
-    max-height: 150px;
   }
 }
