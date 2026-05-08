@@ -944,9 +944,9 @@
 
 /* ── Donate FAB ── */
 .donate-fab {
-  position: absolute;
-  bottom: 76px;
-  right: 24px;
+  position: fixed;
+  top: 16px;
+  left: 16px;
   z-index: 9;
   display: inline-flex;
   align-items: center;
