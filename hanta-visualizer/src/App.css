@@ -938,18 +938,25 @@
 
 @media (max-width: 920px) {
   .side-panel {
-    overflow: auto;
+    overflow: hidden;
   }
 
   .side-panel-body {
     grid-template-columns: 1fr;
-    overflow: auto;
-    align-content: start;
-    padding-right: 2px;
+    grid-template-rows: minmax(140px, 40%) minmax(0, 1fr);
+    min-height: 0;
+    overflow: hidden;
   }
 
   .outbreak-list,
-  .detail-panel,
+  .detail-panel {
+    max-height: none;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
   .detail-report-list {
     max-height: none;
     overflow: visible;
