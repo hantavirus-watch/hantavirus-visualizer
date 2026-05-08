@@ -176,7 +176,21 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [loadError, setLoadError] = useState('');
+  const [showTelegramPopup, setShowTelegramPopup] = useState(false);
   const outbreakDataUrl = `${process.env.PUBLIC_URL}/outbreak.json`;
+
+  useEffect(() => {
+    const dismissed = localStorage.getItem('tg-popup-dismissed');
+    if (!dismissed) {
+      const timer = setTimeout(() => setShowTelegramPopup(true), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const dismissTelegramPopup = () => {
+    setShowTelegramPopup(false);
+    localStorage.setItem('tg-popup-dismissed', '1');
+  };
 
   useEffect(() => {
     const loadOutbreakData = () => {
@@ -465,6 +479,53 @@ function App() {
           </div>
         )}
       </div>
+
+      {showTelegramPopup && (
+        <div className="tg-popup glass-card" role="dialog" aria-label="Telegram bot alert">
+          <button
+            type="button"
+            className="tg-popup__close"
+            aria-label="Close"
+            onClick={dismissTelegramPopup}
+          >×</button>
+          <div className="tg-popup__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.32 14.441l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.828.918z"/>
+            </svg>
+          </div>
+          <div className="tg-popup__body">
+            <p className="tg-popup__title">Get Telegram alerts</p>
+            <p className="tg-popup__desc">Subscribe to <strong>@hantavirus_watch_bot</strong> and receive automatic updates every time the outbreak data is refreshed.</p>
+            <div className="tg-popup__actions">
+              <a
+                className="tg-popup__cta"
+                href="https://t.me/hantavirus_watch_bot"
+                target="_blank"
+                rel="noreferrer"
+                onClick={dismissTelegramPopup}
+              >
+                Open in Telegram
+              </a>
+              <button type="button" className="tg-popup__skip" onClick={dismissTelegramPopup}>
+                No thanks
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <a
+        className="tg-fab glass-card"
+        href="https://t.me/hantavirus_watch_bot"
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Subscribe on Telegram"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.32 14.441l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.828.918z"/>
+        </svg>
+        <span>Telegram alerts</span>
+      </a>
 
       <MapContainer
         center={MAP_CENTER}
