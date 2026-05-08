@@ -17,11 +17,11 @@ const FALLBACK_LOCATIONS = [
 ];
 
 function getSeverityColor(reportCount) {
-  if (reportCount >= 5) {
+  if (reportCount >= 15) {
     return '#dc2626';
   }
 
-  if (reportCount >= 3) {
+  if (reportCount >= 6) {
     return '#f97316';
   }
 
@@ -29,11 +29,11 @@ function getSeverityColor(reportCount) {
 }
 
 function getSeverityLabel(reportCount) {
-  if (reportCount >= 5) {
+  if (reportCount >= 15) {
     return 'High activity';
   }
 
-  if (reportCount >= 3) {
+  if (reportCount >= 6) {
     return 'Medium activity';
   }
 
@@ -41,11 +41,11 @@ function getSeverityLabel(reportCount) {
 }
 
 function getSeverityKey(reportCount) {
-  if (reportCount >= 5) {
+  if (reportCount >= 15) {
     return 'high';
   }
 
-  if (reportCount >= 3) {
+  if (reportCount >= 6) {
     return 'medium';
   }
 
@@ -313,9 +313,9 @@ function App() {
 
           <div className="legend-overlay glass-card">
             <div className="legend-title">Map intensity</div>
-            <div className="legend-item"><span className="legend-dot yellow"></span>Yellow: 1-2 reports</div>
-            <div className="legend-item"><span className="legend-dot orange"></span>Orange: 3-4 reports</div>
-            <div className="legend-item"><span className="legend-dot red"></span>Red: 5+ reports</div>
+            <div className="legend-item"><span className="legend-dot yellow"></span>Yellow: 1-5 reports</div>
+            <div className="legend-item"><span className="legend-dot orange"></span>Orange: 6-14 reports</div>
+            <div className="legend-item"><span className="legend-dot red"></span>Red: 15+ reports</div>
           </div>
         </div>
 
