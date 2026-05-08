@@ -16,9 +16,10 @@ function App() {
 
   useEffect(() => {
     // Carichiamo il file generato dallo script Python
-    fetch('./outbreaks.json')
+    fetch('./outbreak.json')
       .then(response => response.json())
       .then(data => {
+        console.log('Dati ricevuti:', data);
         // Teniamo solo le news che hanno le coordinate
         const geocoded = data.filter(item => item.coordinates);
         setMarkers(geocoded);
