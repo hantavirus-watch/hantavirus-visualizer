@@ -24,11 +24,11 @@ test('renders only geolocated outbreak points', async () => {
   render(<App />);
 
   expect(screen.getByText(/HantaWatch Live/i)).toBeInTheDocument();
-  expect(screen.getByText(/Caricamento dati/i)).toBeInTheDocument();
+  expect(screen.getByText(/Loading outbreak data/i)).toBeInTheDocument();
 
   await waitFor(() => {
-    expect(screen.getByText(/Report totali: 3/i)).toBeInTheDocument();
-    expect(screen.getByText(/Punti geolocalizzati: 2/i)).toBeInTheDocument();
+    expect(screen.getByText(/Total reports: 3/i)).toBeInTheDocument();
+    expect(screen.getByText(/Geolocated points: 2/i)).toBeInTheDocument();
   });
 
   expect(screen.getAllByTestId('marker')).toHaveLength(2);
@@ -42,9 +42,9 @@ test('shows an error when the payload is not an array', async () => {
   render(<App />);
 
   await waitFor(() => {
-    expect(screen.getByText(/Formato dati non valido/i)).toBeInTheDocument();
+    expect(screen.getByText(/Invalid data format/i)).toBeInTheDocument();
   });
 
-  expect(screen.getByText(/Report totali: 0/i)).toBeInTheDocument();
-  expect(screen.getByText(/Punti geolocalizzati: 0/i)).toBeInTheDocument();
+  expect(screen.getByText(/Total reports: 0/i)).toBeInTheDocument();
+  expect(screen.getByText(/Geolocated points: 0/i)).toBeInTheDocument();
 });
