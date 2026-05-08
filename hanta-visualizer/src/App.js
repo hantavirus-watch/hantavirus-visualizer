@@ -13,6 +13,8 @@ L.Icon.Default.mergeOptions({
 
 function App() {
   const [markers, setMarkers] = useState([]);
+  const [totalReports, setTotalReports] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
@@ -22,19 +24,25 @@ function App() {
       .then(data => {
         if (!Array.isArray(data)) {
           setMarkers([]);
+          setTotalReports(0);
           setLoadError('Formato dati non valido');
+          setIsLoading(false);
           return;
         }
 
         // Teniamo solo le news che hanno le coordinate
         const geocoded = data.filter(item => item.coordinates);
+        setTotalReports(data.length);
         setLoadError('');
         setMarkers(geocoded);
+        setIsLoading(false);
       })
       .catch(error => {
         console.error("Errore caricamento dati:", error);
         setMarkers([]);
+        setTotalReports(0);
         setLoadError('Impossibile caricare i dati');
+        setIsLoading(false);
       });
   }, []);
 
@@ -45,14 +53,16 @@ function App() {
         background: 'white', padding: '10px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.3)' 
       }}>
         <h2 style={{ margin: 0, color: '#b91c1c' }}>⚠️ HantaWatch Live</h2>
+        {isLoading && <div style={{ marginTop: '4px', color: '#92400e' }}>Caricamento dati...</div>}
+        <small style={{ display: 'block' }}>Report totali: {totalReports}</small>
         <small>Punti geolocalizzati: {markers.length}</small>
         {loadError && <div style={{ marginTop: '4px', color: '#991b1b' }}>{loadError}</div>}
       </div>
 
       <MapContainer center={[20, 0]} zoom={2} style={{ height: '100%', width: '100%' }}>
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; OpenStreetMap contributors'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
         />
         {markers.map((m, i) => (
           <Marker key={i} position={m.coordinates}>
