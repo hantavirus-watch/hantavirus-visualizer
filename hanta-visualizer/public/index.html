@@ -40,8 +40,14 @@
     -->
     <title>HantaWatch Live</title>
 
-    <!-- Plausible Analytics (privacy-first, no cookies) -->
-    <script defer data-domain="hantavirus-watch.github.io" src="https://plausible.io/js/script.js"></script>
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
