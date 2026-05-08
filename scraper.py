@@ -20,15 +20,15 @@ OUTPUT_PATH = Path(__file__).parent / "hanta-visualizer" / "public" / "outbreak.
 
 FEEDS = [
     {
-        "source": "ProMED",
-        "url": "https://promedmail.org/feed/",
+        "source": "Google News",
+        "url": "https://news.google.com/rss/search?q=hantavirus&hl=en-US&gl=US&ceid=US:en",
     },
     {
-        "source": "WHO DON",
-        "url": "https://www.who.int/feeds/entity/csr/don/en/rss.xml",
+        "source": "Google News ES",
+        "url": "https://news.google.com/rss/search?q=hantavirus&hl=es-419&gl=AR&ceid=AR:es-419",
     },
     {
-        "source": "CDC",
+        "source": "CDC Newsroom",
         "url": "https://tools.cdc.gov/api/v2/resources/media/132608.rss",
     },
 ]
@@ -121,7 +121,9 @@ def fetch_feed(url: str, source: str) -> list[dict]:
 
     for entry in entries:
         def text(tag):
-            el = entry.find(tag) or entry.find(f"atom:{tag}", ns)
+            el = entry.find(tag)
+            if el is None:
+                el = entry.find(f"atom:{tag}", ns)
             return (el.text or "").strip() if el is not None else ""
 
         title = text("title")
