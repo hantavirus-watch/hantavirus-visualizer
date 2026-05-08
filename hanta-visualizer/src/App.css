@@ -80,7 +80,7 @@
   right: 16px;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(260px, 380px) auto minmax(240px, 320px);
+  grid-template-columns: auto minmax(240px, 320px);
   gap: 12px;
   align-items: start;
 }
@@ -698,7 +698,7 @@
 
 @media (max-width: 1120px) {
   .top-overlay {
-    grid-template-columns: minmax(240px, 1.2fr) auto minmax(220px, 280px);
+    grid-template-columns: auto minmax(220px, 280px);
     gap: 10px;
   }
 

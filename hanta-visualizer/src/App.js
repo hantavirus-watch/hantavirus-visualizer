@@ -250,12 +250,6 @@ function App() {
   return (
     <div className="app-shell">
       <div className="top-overlay">
-        <div className="brand-card glass-card">
-          <div className="brand-eyebrow">Signal-led global tracker</div>
-          <h1>HantaWatch</h1>
-          <p>Editorial-style outbreak mapping inspired by HantavirusMap, tuned for your live feed.</p>
-        </div>
-
         <div className="status-row">
           <div className="stat-pill glass-card">
             <span className="stat-value">{totalReports}</span>
