@@ -5,9 +5,9 @@
   --font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
   --ink: #102135;
   --muted: #5d7086;
-  --card: rgba(255, 255, 255, 0.86);
-  --surface: rgba(248, 250, 252, 0.92);
-  --surface-active: rgba(255, 255, 255, 0.98);
+  --card: rgba(255, 255, 255, 0.28);
+  --surface: rgba(248, 250, 252, 0.32);
+  --surface-active: rgba(255, 255, 255, 0.48);
   --line: rgba(148, 163, 184, 0.22);
   --glass-border: rgba(255, 255, 255, 0.62);
   --shadow: 0 22px 48px rgba(15, 23, 42, 0.15);
@@ -28,9 +28,9 @@
   :root {
     --ink: #e5eef8;
     --muted: #9db0c6;
-    --card: rgba(15, 23, 42, 0.78);
-    --surface: rgba(15, 23, 42, 0.88);
-    --surface-active: rgba(30, 41, 59, 0.92);
+    --card: rgba(15, 23, 42, 0.30);
+    --surface: rgba(15, 23, 42, 0.35);
+    --surface-active: rgba(30, 41, 59, 0.50);
     --line: rgba(148, 163, 184, 0.32);
     --glass-border: rgba(148, 163, 184, 0.26);
     --shadow: 0 24px 54px rgba(2, 6, 23, 0.52);
@@ -94,7 +94,7 @@
 .glass-card {
   background: var(--card);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
   box-shadow: var(--shadow);
 }
 
@@ -439,7 +439,7 @@
 
 .panel-toggle-button:hover {
   transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.40);
 }
 
 .filter-grid {
@@ -673,7 +673,7 @@
 
 .signal-map .leaflet-popup-content-wrapper,
 .signal-map .leaflet-popup-tip {
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.65);
 }
 
 .signal-map .leaflet-popup-content-wrapper {
@@ -697,7 +697,7 @@
   height: 28px;
   border-radius: 999px;
   color: #475569;
-  background: rgba(241, 245, 249, 0.96);
+  background: rgba(241, 245, 249, 0.65);
   font-size: 20px;
   line-height: 24px;
   text-align: center;
