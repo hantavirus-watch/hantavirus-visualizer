@@ -289,10 +289,34 @@ export const LOCATION_ALIASES = [
     patterns: [/jujuy/i],
   },
   {
+    locationName: 'Mendoza, Argentina',
+    country: 'Argentina',
+    coordinates: [-32.8895, -68.8458],
+    patterns: [/mendoza/i],
+  },
+  {
+    locationName: 'Tandil, Argentina',
+    country: 'Argentina',
+    coordinates: [-37.3217, -59.1332],
+    patterns: [/tandil/i],
+  },
+  {
+    locationName: 'Bariloche, Argentina',
+    country: 'Argentina',
+    coordinates: [-41.1335, -71.3103],
+    patterns: [/bariloche/i],
+  },
+  {
     locationName: 'Salta, Argentina',
     country: 'Argentina',
     coordinates: [-24.7821, -65.4232],
     patterns: [/salta/i],
+  },
+  {
+    locationName: 'Tierra del Fuego, Argentina',
+    country: 'Argentina',
+    coordinates: [-54.2, -67.7],
+    patterns: [/tierra del fuego/i],
   },
   {
     locationName: 'Argentina',
@@ -331,10 +355,28 @@ export const LOCATION_ALIASES = [
     patterns: [/arizona/i, /four corners/i],
   },
   {
+    locationName: 'Virginia, USA',
+    country: 'United States',
+    coordinates: [37.4316, -78.6569],
+    patterns: [/virginia/i],
+  },
+  {
+    locationName: 'Oregon, USA',
+    country: 'United States',
+    coordinates: [43.8041, -120.5542],
+    patterns: [/oregon/i],
+  },
+  {
+    locationName: 'New York, USA',
+    country: 'United States',
+    coordinates: [42.9134, -75.5963],
+    patterns: [/new york/i, /\bin ny\b/i],
+  },
+  {
     locationName: 'United States',
     country: 'United States',
     coordinates: [38.8951, -77.0364],
-    patterns: [/united states/i, /u\.s\./i, /usa/i, /new jersey/i],
+    patterns: [/united states/i, /u\.s\./i, /usa/i, /new jersey/i, /us states/i, /five states/i],
   },
   {
     locationName: 'Northern Ireland, UK',
@@ -346,7 +388,7 @@ export const LOCATION_ALIASES = [
     locationName: 'United Kingdom',
     country: 'United Kingdom',
     coordinates: [55.3781, -3.436],
-    patterns: [/united kingdom/i, /britons/i, /uk/i, /britain/i],
+    patterns: [/united kingdom/i, /britons/i, /briton/i, /uk/i, /britain/i],
   },
   {
     locationName: 'Para, Brazil',
@@ -406,7 +448,13 @@ export const LOCATION_ALIASES = [
     locationName: 'Netherlands',
     country: 'Netherlands',
     coordinates: [52.1326, 5.2913],
-    patterns: [/netherlands/i, /dutch/i],
+    patterns: [/netherlands/i, /dutch/i, /klm/i, /neerlandes/i, /neerlandeses/i],
+  },
+  {
+    locationName: 'Singapore',
+    country: 'Singapore',
+    coordinates: [1.3521, 103.8198],
+    patterns: [/singapore/i, /singaporean/i],
   },
   {
     locationName: 'Switzerland',
@@ -449,6 +497,12 @@ export const LOCATION_ALIASES = [
     country: 'South Africa',
     coordinates: [-30.5595, 22.9375],
     patterns: [/south africa/i, /johannesburg/i],
+  },
+  {
+    locationName: 'Tristan da Cunha',
+    country: 'Tristan da Cunha',
+    coordinates: [-37.1052, -12.2777],
+    patterns: [/tristan da cunha/i, /remote island/i, /south atlantic island/i],
   },
   {
     locationName: 'Kenya',
@@ -508,7 +562,22 @@ export const LOCATION_ALIASES = [
     locationName: 'Multiple countries',
     country: 'Multiple countries',
     coordinates: [20.0, 10.0],
-    patterns: [/multiple countries/i, /across the world/i, /worldwide/i],
+    patterns: [
+      /multiple countries/i,
+      /across the world/i,
+      /worldwide/i,
+      /mv hondius/i,
+      /cruise ship/i,
+      /crucero/i,
+      /deadly cruise outbreak/i,
+      /hantavirus cruise/i,
+      /aboard ship/i,
+      /on board ship/i,
+      /stricken ship/i,
+      /infected ship/i,
+      /linked to cruise ship/i,
+      /tied to cruise ship/i,
+    ],
   },
 ];
 
