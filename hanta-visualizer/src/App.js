@@ -8,6 +8,8 @@ const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 const MAP_CENTER = [20, 0];
 const MAP_ZOOM = 2;
 const MAP_FOCUS_ZOOM = 4;
+const LIGHT_TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
+const DARK_TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png';
 const FALLBACK_LOCATIONS = [
   {
     locationName: 'Canary Islands',
@@ -116,6 +118,39 @@ function MapViewportController({ selectedMarker }) {
   return null;
 }
 
+function usePrefersDarkMode() {
+  const getInitialPreference = () => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  };
+
+  const [prefersDarkMode, setPrefersDarkMode] = useState(getInitialPreference);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = event => setPrefersDarkMode(event.matches);
+
+    setPrefersDarkMode(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
+  return prefersDarkMode;
+}
+
 function buildLocationMarkers(data) {
   const groupedLocations = new Map();
 
@@ -167,6 +202,7 @@ L.Icon.Default.mergeOptions({
 });
 
 function App() {
+  const prefersDarkMode = usePrefersDarkMode();
   const [markers, setMarkers] = useState([]);
   const [selectedMarkerId, setSelectedMarkerId] = useState('');
   const [isPanelOpen, setIsPanelOpen] = useState(true);
@@ -260,9 +296,10 @@ function App() {
   const filteredReportCount = filteredMarkers.reduce((reportCount, marker) => reportCount + marker.reportCount, 0);
   const featuredMarker = filteredMarkers.find(marker => marker.id === selectedMarkerId) || filteredMarkers[0] || null;
   const locationOptions = Array.from(new Set(markers.map(marker => marker.locationName))).sort((left, right) => left.localeCompare(right));
+  const tileUrl = prefersDarkMode ? DARK_TILE_URL : LIGHT_TILE_URL;
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${prefersDarkMode ? 'theme-dark' : 'theme-light'}`}>
       <div className="top-overlay">
         <div className="status-row">
           <div className="stat-pill glass-card">
@@ -564,7 +601,7 @@ function App() {
       >
         <MapViewportController selectedMarker={featuredMarker} />
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
+          url={tileUrl}
         />
         {filteredMarkers.map((m, i) => (
           <CircleMarker
