@@ -1,7 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { CircleMarker, MapContainer, TileLayer, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import {
+  CircleMarker,
+  MapContainer,
+  Marker,
+  Polygon,
+  Polyline,
+  TileLayer,
+  Tooltip,
+  ZoomControl,
+  useMap,
+} from 'react-leaflet';
 import './App.css';
 import 'leaflet/dist/leaflet.css';
+import {
+  ABOUT_PAGE,
+  ALERT_TYPE_META,
+  CONTACT_PAGE,
+  ENDEMIC_ZONES,
+  FAQ_ITEMS,
+  FEATURED_OUTBREAK,
+  HANTAVIRUS_PAGE,
+  HISTORICAL_CASES,
+  INTRO_STEPS,
+  LOCATION_ALIASES,
+  MENU_ITEMS,
+  ROUTE_ALERT,
+  SUPPORT_LINKS,
+  SYMPTOMS_PAGE,
+} from './siteContent';
 
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 const MAP_CENTER = [20, 0];
@@ -9,77 +36,55 @@ const MAP_ZOOM = 2;
 const MAP_FOCUS_ZOOM = 4;
 const LIGHT_TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
 const DARK_TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png';
-const FALLBACK_LOCATIONS = [
-  {
-    locationName: 'Canary Islands',
-    coordinates: [28.2916, -16.6291],
-    patterns: [/canary islands/i, /canarias/i, /tenerife/i, /gran canaria/i, /las palmas/i],
-  },
-];
-const MENU_PAGES = [
-  {
-    id: 'reports',
-    eyebrow: 'Data view',
-    title: 'Reports & clusters',
-    description: 'Open the live outbreak dataset in a dedicated page instead of on top of the map.',
-  },
-  {
-    id: 'guide',
-    eyebrow: 'Map guide',
-    title: 'Signal map guide',
-    description: 'Read the intensity scale, refresh cadence and how to navigate the live map.',
-  },
-  {
-    id: 'about',
-    eyebrow: 'Project info',
-    title: 'About & links',
-    description: 'Credits, repository, Telegram alerts and share links live here now.',
-  },
-];
+const ALERT_TYPE_ORDER = ['local', 'imported', 'response'];
+const OUTBREAK_PATTERNS = [/hondius/i, /cruise ship/i, /antarctic peninsula/i, /tenerife/i];
+const HASH_TO_VIEW = {
+  '': 'map',
+  '/': 'map',
+  map: 'map',
+  hantavirus: 'hantavirus',
+  symptoms: 'symptoms',
+  about: 'about',
+  faq: 'faq',
+  contact: 'contact',
+  outbreak: 'outbreak',
+  'outbreaks/mv-hondius-2026': 'outbreak',
+};
+const VIEW_TO_HASH = {
+  map: '#/',
+  outbreak: FEATURED_OUTBREAK.routeHash,
+  hantavirus: '#/hantavirus',
+  symptoms: '#/symptoms',
+  about: '#/about',
+  faq: '#/faq',
+  contact: '#/contact',
+};
 
-function getSeverityColor(reportCount) {
-  if (reportCount >= 15) {
-    return '#dc2626';
-  }
-
-  if (reportCount >= 6) {
-    return '#f97316';
-  }
-
-  return '#facc15';
+function normalizeHashToView(hashValue) {
+  const normalizedHash = hashValue.replace(/^#/, '').replace(/^\//, '').replace(/\/$/, '');
+  return HASH_TO_VIEW[normalizedHash] || 'map';
 }
 
-function getSeverityLabel(reportCount) {
-  if (reportCount >= 15) {
-    return 'High activity';
+function updateHash(viewId) {
+  const nextHash = VIEW_TO_HASH[viewId] || VIEW_TO_HASH.map;
+
+  if (typeof window === 'undefined') {
+    return;
   }
 
-  if (reportCount >= 6) {
-    return 'Medium activity';
+  if (window.location.hash === nextHash) {
+    return;
   }
 
-  return 'Low activity';
+  window.location.hash = nextHash;
 }
 
-function getSeverityKey(reportCount) {
-  if (reportCount >= 15) {
-    return 'high';
-  }
-
-  if (reportCount >= 6) {
-    return 'medium';
-  }
-
-  return 'low';
+function toTitleCase(value) {
+  return value.replace(/\b\w/g, letter => letter.toUpperCase());
 }
 
-function getMarkerClassName(reportCount, isSelected) {
-  const severityKey = getSeverityKey(reportCount);
-  return [
-    'signal-marker',
-    `signal-marker--${severityKey}`,
-    isSelected ? 'signal-marker--selected' : '',
-  ].filter(Boolean).join(' ');
+function formatNumber(value) {
+  return new Intl.NumberFormat().format(value);
 }
 
 function formatPublishedDate(publishedAt) {
@@ -89,30 +94,160 @@ function formatPublishedDate(publishedAt) {
     return 'Date unavailable';
   }
 
-  return publishedDate.toLocaleDateString();
+  return publishedDate.toLocaleString();
+}
+
+function formatRelativeTime(dateValue) {
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown';
+  }
+
+  const diffMs = date.getTime() - Date.now();
+  const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+  const minutes = Math.round(diffMs / 60000);
+
+  if (Math.abs(minutes) < 60) {
+    return formatter.format(minutes, 'minute');
+  }
+
+  const hours = Math.round(minutes / 60);
+
+  if (Math.abs(hours) < 48) {
+    return formatter.format(hours, 'hour');
+  }
+
+  const days = Math.round(hours / 24);
+  return formatter.format(days, 'day');
+}
+
+function getSignalLevel(reportCount) {
+  if (reportCount >= 18) {
+    return 'surge';
+  }
+
+  if (reportCount >= 8) {
+    return 'active';
+  }
+
+  return 'watch';
+}
+
+function getSignalLabel(reportCount) {
+  const level = getSignalLevel(reportCount);
+
+  if (level === 'surge') {
+    return 'Surge';
+  }
+
+  if (level === 'active') {
+    return 'Active';
+  }
+
+  return 'Watch';
+}
+
+function getSignalPillClass(reportCount) {
+  return `signal-pill signal-pill--${getSignalLevel(reportCount)}`;
+}
+
+function getAlertTypeClass(alertType) {
+  return `type-pill type-pill--${alertType}`;
+}
+
+function getMarkerClassName(alertType, reportCount, isSelected) {
+  const signalLevel = getSignalLevel(reportCount);
+  return [
+    'alert-pin',
+    `alert-pin--${alertType}`,
+    `alert-pin--${signalLevel}`,
+    isSelected ? 'alert-pin--selected' : '',
+  ].filter(Boolean).join(' ');
+}
+
+function isUnknownLocation(value) {
+  return !value || /unknown/i.test(value);
+}
+
+function classifyAlertType(item) {
+  const searchableText = [item.title, item.location_name, item.link]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if (/(screening|quarantine|isolat|advisory|response|monitoring|tracing|surveillance)/.test(searchableText)) {
+    return 'response';
+  }
+
+  if (/(returnee|repatriat|travel|passenger|hospital|clinic|exposed|contact)/.test(searchableText)) {
+    return 'imported';
+  }
+
+  return 'local';
+}
+
+function resolveCountryFromLocationName(locationName) {
+  if (isUnknownLocation(locationName)) {
+    return '';
+  }
+
+  const alias = LOCATION_ALIASES.find(entry => entry.locationName === locationName);
+
+  if (alias) {
+    return alias.country;
+  }
+
+  const parts = locationName.split(',').map(part => part.trim()).filter(Boolean);
+  return parts[parts.length - 1] || locationName;
 }
 
 function resolveReportLocation(item) {
+  const searchableText = [item.location_name, item.title, item.link, item.source]
+    .filter(Boolean)
+    .join(' ');
+  const aliasMatch = LOCATION_ALIASES.find(entry => entry.patterns.some(pattern => pattern.test(searchableText)));
+
   if (Array.isArray(item.coordinates) && item.coordinates.length === 2) {
+    const locationName = !isUnknownLocation(item.location_name)
+      ? item.location_name
+      : aliasMatch?.locationName || 'Unspecified location';
+
     return {
-      locationName: item.location_name || 'Unknown location',
+      locationName,
+      country: aliasMatch?.country || resolveCountryFromLocationName(locationName),
       coordinates: item.coordinates,
     };
   }
 
-  const searchableText = [item.location_name, item.title, item.link]
-    .filter(Boolean)
-    .join(' ');
+  return {
+    locationName: aliasMatch?.locationName || '',
+    country: aliasMatch?.country || '',
+    coordinates: aliasMatch?.coordinates || null,
+  };
+}
 
-  const fallbackLocation = FALLBACK_LOCATIONS.find(entry => entry.patterns.some(pattern => pattern.test(searchableText)));
-
-  if (!fallbackLocation) {
-    return null;
-  }
+function hydrateReport(item) {
+  const resolvedLocation = resolveReportLocation(item);
+  const publishedDate = new Date(item.published);
+  const searchText = [
+    item.title,
+    item.source,
+    item.location_name,
+    resolvedLocation.locationName,
+    resolvedLocation.country,
+  ].filter(Boolean).join(' ').toLowerCase();
 
   return {
-    locationName: fallbackLocation.locationName,
-    coordinates: fallbackLocation.coordinates,
+    ...item,
+    alertType: classifyAlertType(item),
+    country: resolvedLocation.country,
+    hasCoordinates: Array.isArray(resolvedLocation.coordinates) && resolvedLocation.coordinates.length === 2,
+    isFeaturedOutbreak: OUTBREAK_PATTERNS.some(pattern => pattern.test(searchText)),
+    locationName: resolvedLocation.locationName || item.location_name || 'No location',
+    coordinates: resolvedLocation.coordinates,
+    publishedDate,
+    searchText,
   };
 }
 
@@ -120,42 +255,75 @@ function buildLocationMarkers(data) {
   const groupedLocations = new Map();
 
   data.forEach(item => {
-    const resolvedLocation = resolveReportLocation(item);
-
-    if (!resolvedLocation) {
+    if (!item.hasCoordinates) {
       return;
     }
 
-    const [lat, lng] = resolvedLocation.coordinates;
-    const locationKey = `${resolvedLocation.locationName}:${lat}:${lng}`;
+    const [lat, lng] = item.coordinates;
+    const locationKey = `${item.locationName}:${lat}:${lng}`;
     const existingLocation = groupedLocations.get(locationKey);
-    const resolvedReport = {
-      ...item,
-      location_name: resolvedLocation.locationName,
-      coordinates: resolvedLocation.coordinates,
-    };
 
     if (existingLocation) {
       existingLocation.reportCount += 1;
-      existingLocation.reports.push(resolvedReport);
+      existingLocation.reports.push(item);
+      existingLocation.typeCounts[item.alertType] += 1;
+      existingLocation.sources.add(item.source || 'Unknown');
       return;
     }
 
     groupedLocations.set(locationKey, {
       id: locationKey,
-      coordinates: resolvedLocation.coordinates,
-      locationName: resolvedLocation.locationName,
+      coordinates: item.coordinates,
+      locationName: item.locationName,
+      country: item.country || resolveCountryFromLocationName(item.locationName),
       reportCount: 1,
-      reports: [resolvedReport],
+      reports: [item],
+      sources: new Set([item.source || 'Unknown']),
+      typeCounts: {
+        local: item.alertType === 'local' ? 1 : 0,
+        imported: item.alertType === 'imported' ? 1 : 0,
+        response: item.alertType === 'response' ? 1 : 0,
+      },
     });
   });
 
   return Array.from(groupedLocations.values())
     .map(location => ({
       ...location,
-      reports: [...location.reports].sort((left, right) => new Date(right.published) - new Date(left.published)),
+      dominantType: ALERT_TYPE_ORDER
+        .slice()
+        .sort((left, right) => location.typeCounts[right] - location.typeCounts[left])[0],
+      reports: [...location.reports].sort((left, right) => right.publishedDate - left.publishedDate),
+      sourceCount: location.sources.size,
     }))
-    .sort((left, right) => right.reportCount - left.reportCount);
+    .sort((left, right) => right.reportCount - left.reportCount || left.locationName.localeCompare(right.locationName));
+}
+
+function buildAlertIcon(marker, isSelected) {
+  return L.divIcon({
+    className: 'alert-pin-icon',
+    html: `
+      <div class="${getMarkerClassName(marker.dominantType, marker.reportCount, isSelected)}">
+        <span class="alert-pin__pulse"></span>
+        <span class="alert-pin__core">${marker.reportCount > 1 ? formatNumber(marker.reportCount) : ''}</span>
+      </div>
+    `,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+  });
+}
+
+function buildRouteIcon(stop) {
+  return L.divIcon({
+    className: 'route-pin-icon',
+    html: `
+      <div class="route-pin route-pin--${stop.type}">
+        <span class="route-pin__label">${stop.type.slice(0, 1).toUpperCase()}</span>
+      </div>
+    `,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
 }
 
 function usePrefersDarkMode() {
@@ -191,11 +359,20 @@ function usePrefersDarkMode() {
   return prefersDarkMode;
 }
 
-function MapViewportController({ selectedMarker, activePage }) {
+function MapViewportController({ activeView, selectedMarker, showDetailDrawer }) {
   const map = useMap();
 
   useEffect(() => {
-    if (!selectedMarker || activePage !== 'reports') {
+    if (activeView === 'outbreak') {
+      const routeBounds = L.latLngBounds(ROUTE_ALERT.stops.map(stop => stop.coordinates));
+      map.flyToBounds(routeBounds.pad(0.35), {
+        animate: true,
+        duration: 1.2,
+      });
+      return;
+    }
+
+    if (!selectedMarker || !showDetailDrawer) {
       map.flyTo(MAP_CENTER, MAP_ZOOM, {
         animate: true,
         duration: 1,
@@ -207,263 +384,447 @@ function MapViewportController({ selectedMarker, activePage }) {
       animate: true,
       duration: 1.2,
     });
-  }, [activePage, map, selectedMarker]);
+  }, [activeView, map, selectedMarker, showDetailDrawer]);
 
   return null;
 }
 
-function PageFrame({ eyebrow, title, description, onClose, className = '', children }) {
+function SectionCard({ title, body, bullets }) {
   return (
-    <section className={`page-panel glass-card ${className}`.trim()} aria-label={title}>
-      <div className="page-header">
+    <article className="section-card">
+      <h3>{title}</h3>
+      <p>{body}</p>
+      {bullets?.length ? (
+        <ul className="section-list">
+          {bullets.map(bullet => (
+            <li key={bullet}>{bullet}</li>
+          ))}
+        </ul>
+      ) : null}
+    </article>
+  );
+}
+
+function PageFrame({ eyebrow, title, description, onClose, children, actions }) {
+  return (
+    <section className="page-panel glass-card" aria-label={title}>
+      <header className="page-header">
         <div>
-          <div className="page-eyebrow">{eyebrow}</div>
+          <p className="page-eyebrow">{eyebrow}</p>
           <h2 className="page-title">{title}</h2>
           <p className="page-description">{description}</p>
         </div>
-        <button type="button" className="page-close-button" onClick={onClose}>
-          Close
-        </button>
-      </div>
+        <div className="page-header__actions">
+          {actions}
+          <button type="button" className="page-close-button" onClick={onClose}>
+            Back to map
+          </button>
+        </div>
+      </header>
       <div className="page-body">{children}</div>
     </section>
   );
 }
 
-function ReportsPage({
-  featuredMarker,
-  filteredMarkers,
-  filteredReportCount,
-  locationFilter,
-  locationOptions,
-  onClose,
-  onResetFilters,
-  onSelectMarker,
-  onSetLocationFilter,
-  onSetSeverityFilter,
-  severityFilter,
+function NewsFeedDrawer({ feedSearch, onClose, onFeedSearch, onSelectReport, reports }) {
+  return (
+    <aside className="drawer drawer--feed glass-card" aria-label="Live alerts feed">
+      <div className="drawer-header">
+        <div>
+          <p className="drawer-eyebrow">Live alerts</p>
+          <h2>Recent signal feed</h2>
+        </div>
+        <button type="button" className="drawer-close" onClick={onClose}>
+          Close
+        </button>
+      </div>
+      <label className="drawer-search">
+        <span className="sr-only">Search the news feed</span>
+        <input
+          type="search"
+          placeholder="Search news, places or source"
+          value={feedSearch}
+          onChange={event => onFeedSearch(event.target.value)}
+        />
+      </label>
+      <div className="drawer-list" aria-label="Recent signal list">
+        {reports.length ? reports.map(report => (
+          <button key={`${report.link}-${report.published}`} type="button" className="feed-item" onClick={() => onSelectReport(report)}>
+            <div className="feed-item__meta">
+              <span className={getAlertTypeClass(report.alertType)}>{ALERT_TYPE_META[report.alertType].shortLabel}</span>
+              <span>{formatRelativeTime(report.published)}</span>
+              <span>{report.source || 'Unknown source'}</span>
+            </div>
+            <strong className="feed-item__title">{report.title}</strong>
+            <span className="feed-item__location">{report.locationName}</span>
+          </button>
+        )) : (
+          <div className="empty-card">
+            <strong>No matching alerts</strong>
+            <span>Try a broader search term.</span>
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+function ClusterDrawer({ cluster, onClose }) {
+  return (
+    <aside className="drawer drawer--detail glass-card" aria-label="Selected location details">
+      <div className="drawer-header">
+        <div>
+          <p className="drawer-eyebrow">Selected cluster</p>
+          <h2>{cluster.locationName}</h2>
+        </div>
+        <button type="button" className="drawer-close" onClick={onClose}>
+          Close
+        </button>
+      </div>
+
+      <div className="detail-stats-grid">
+        <div className="detail-stat-card">
+          <strong>{formatNumber(cluster.reportCount)}</strong>
+          <span>signals</span>
+        </div>
+        <div className="detail-stat-card">
+          <strong>{cluster.sourceCount}</strong>
+          <span>sources</span>
+        </div>
+        <div className="detail-stat-card">
+          <strong>{cluster.country || 'Mixed'}</strong>
+          <span>territory</span>
+        </div>
+      </div>
+
+      <div className="detail-banner">
+        <span className={getSignalPillClass(cluster.reportCount)}>{getSignalLabel(cluster.reportCount)}</span>
+        <span className={getAlertTypeClass(cluster.dominantType)}>{ALERT_TYPE_META[cluster.dominantType].label}</span>
+      </div>
+
+      <p className="detail-summary">{cluster.reports[0].title}</p>
+      <a className="action-link action-link--primary" href={cluster.reports[0].link} target="_blank" rel="noreferrer">
+        Open latest source
+      </a>
+
+      <div className="drawer-list" aria-label="Cluster reports">
+        {cluster.reports.map(report => (
+          <a key={`${report.link}-${report.published}`} className="report-card" href={report.link} target="_blank" rel="noreferrer">
+            <div className="report-card__meta">
+              <span className={getAlertTypeClass(report.alertType)}>{ALERT_TYPE_META[report.alertType].shortLabel}</span>
+              <span>{formatPublishedDate(report.published)}</span>
+            </div>
+            <strong>{report.title}</strong>
+            <span>{report.source || 'Unknown source'}</span>
+          </a>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+function LegendPanel({
+  isExpanded,
+  onToggle,
+  showEndemic,
+  showHistorical,
+  showRouteLayer,
+  onToggleEndemic,
+  onToggleHistorical,
+  onToggleRouteLayer,
 }) {
   return (
-    <PageFrame
-      eyebrow="Data view"
-      title="Reports & clusters"
-      description="Every cluster now opens inside a dedicated page instead of a popup on the main map."
-      onClose={onClose}
-      className="page-panel--wide"
-    >
-      <div className="reports-toolbar">
-        <div className="filter-grid">
-          <label className="filter-field">
-            <span>Country / region</span>
-            <select value={locationFilter} onChange={event => onSetLocationFilter(event.target.value)}>
-              <option value="all">All</option>
-              {locationOptions.map(location => (
-                <option key={location} value={location}>{location}</option>
+    <section className="legend-card glass-card">
+      <button type="button" className="legend-toggle" onClick={onToggle} aria-expanded={isExpanded}>
+        <span>Layers</span>
+        <span>{isExpanded ? 'Hide' : 'Show'}</span>
+      </button>
+
+      {isExpanded ? (
+        <div className="legend-body">
+          <div className="legend-block">
+            <p className="page-eyebrow">Now active</p>
+            <div className="legend-list">
+              {ALERT_TYPE_ORDER.map(alertType => (
+                <div key={alertType} className="legend-row">
+                  <span className={`legend-swatch legend-swatch--${alertType}`}></span>
+                  <div>
+                    <strong>{ALERT_TYPE_META[alertType].label}</strong>
+                    <span>{ALERT_TYPE_META[alertType].description}</span>
+                  </div>
+                </div>
               ))}
-            </select>
-          </label>
-
-          <label className="filter-field">
-            <span>Severity</span>
-            <select value={severityFilter} onChange={event => onSetSeverityFilter(event.target.value)}>
-              <option value="all">All</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="page-summary-row">
-          <span>{filteredReportCount} mapped reports in view</span>
-          {(locationFilter !== 'all' || severityFilter !== 'all') && (
-            <button type="button" className="text-button" onClick={onResetFilters}>
-              Reset filters
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="reports-layout">
-        <div className="cluster-list" aria-label="Cluster list">
-          {filteredMarkers.length ? filteredMarkers.map(cluster => (
-            <button
-              key={cluster.id}
-              type="button"
-              className={`cluster-item${cluster.id === featuredMarker?.id ? ' is-selected' : ''}`}
-              onClick={() => onSelectMarker(cluster.id)}
-            >
-              <div className="cluster-item__top">
-                <span className="cluster-item__name">{cluster.locationName}</span>
-                <span className={`severity-pill severity-pill--${getSeverityKey(cluster.reportCount)}`}>
-                  {getSeverityLabel(cluster.reportCount)}
-                </span>
-              </div>
-              <div className="cluster-item__meta">
-                <span>{cluster.reportCount} reports</span>
-                <span>{cluster.reports[0].source || 'Source unavailable'}</span>
-              </div>
-            </button>
-          )) : (
-            <div className="empty-state">
-              <strong>No outbreaks found.</strong>
-              <span>Try widening the country or severity filters.</span>
             </div>
-          )}
+            <p className="legend-caption">Marker counts represent grouped signal mentions, not confirmed case totals.</p>
+          </div>
+
+          <div className="legend-block">
+            <p className="page-eyebrow">Add context</p>
+            <button type="button" className={`layer-toggle ${showEndemic ? 'is-active' : ''}`} onClick={onToggleEndemic}>
+              <span>Endemic zones</span>
+              <small>{ENDEMIC_ZONES.length} long-running regions</small>
+            </button>
+            <button type="button" className={`layer-toggle ${showHistorical ? 'is-active' : ''}`} onClick={onToggleHistorical}>
+              <span>Historical burden</span>
+              <small>{HISTORICAL_CASES.length} reference circles</small>
+            </button>
+            <button type="button" className={`layer-toggle ${showRouteLayer ? 'is-active' : ''}`} onClick={onToggleRouteLayer}>
+              <span>Route alert</span>
+              <small>Departure, stopover and response markers</small>
+            </button>
+          </div>
         </div>
-
-        <div className="detail-panel">
-          {featuredMarker ? (
-            <>
-              <div className="detail-header">
-                <div>
-                  <div className="page-eyebrow">Selected cluster</div>
-                  <h3 className="detail-title">{featuredMarker.locationName}</h3>
-                </div>
-                <span className={`severity-pill severity-pill--${getSeverityKey(featuredMarker.reportCount)}`}>
-                  {getSeverityLabel(featuredMarker.reportCount)}
-                </span>
-              </div>
-
-              <p className="detail-story">{featuredMarker.reports[0].title}</p>
-
-              <div className="detail-stats">
-                <div className="detail-stat">
-                  <strong>{featuredMarker.reportCount}</strong>
-                  <span>clustered reports</span>
-                </div>
-                <div className="detail-stat">
-                  <strong>{featuredMarker.locationName}</strong>
-                  <span>current focus</span>
-                </div>
-              </div>
-
-              <div className="detail-actions">
-                <a
-                  className="action-link action-link--primary"
-                  href={featuredMarker.reports[0].link}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open latest report
-                </a>
-              </div>
-
-              <div className="detail-links" aria-label="Report links">
-                {featuredMarker.reports.map((report, index) => (
-                  <a
-                    key={`${report.link}-${index}`}
-                    className="detail-link"
-                    href={report.link}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <span className="detail-link__source">{report.source || 'Source unavailable'}</span>
-                    <span className="detail-link__title">{report.title}</span>
-                    <span className="detail-link__date">{formatPublishedDate(report.published)}</span>
-                  </a>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="empty-state empty-state--tall">
-              <strong>No active cluster</strong>
-              <span>Select a marker on the map or choose another filter combination.</span>
-            </div>
-          )}
-        </div>
-      </div>
-    </PageFrame>
+      ) : null}
+    </section>
   );
 }
 
-function GuidePage({ geolocatedReports, isLoading, lastUpdated, loadError, markers, onClose, onOpenReports, totalReports }) {
+function MenuDrawer({ onClose, onNavigate, outbreakReportCount }) {
   return (
-    <PageFrame
-      eyebrow="Map guide"
-      title="How to read the live map"
-      description="The main screen stays minimal now. Use this page to understand the signal scale and refresh state."
-      onClose={onClose}
-      className="page-panel--medium"
-    >
-      <div className="guide-grid">
-        <article className="guide-card">
-          <div className="guide-card__header">
-            <h3>Signal status</h3>
-            {isLoading && <span className="status-chip status-chip--loading">Loading</span>}
-            {!isLoading && !loadError && <span className="status-chip status-chip--live">Live</span>}
-            {loadError && <span className="status-chip status-chip--error">Error</span>}
-          </div>
-          <p>
-            The homepage now keeps only the core counters visible. Open this guide or the reports page from the top menu whenever you need context.
-          </p>
-          <ul className="guide-metrics">
-            <li><strong>{totalReports}</strong><span>reports in dataset</span></li>
-            <li><strong>{markers.length}</strong><span>active clusters</span></li>
-            <li><strong>{geolocatedReports}</strong><span>mapped reports</span></li>
-          </ul>
-          <div className="guide-note">Auto-refresh every 30 minutes</div>
-          {lastUpdated && <div className="guide-note">Last update: {lastUpdated.toLocaleString()}</div>}
-          {loadError && <div className="guide-error">{loadError}</div>}
-        </article>
+    <aside className="menu-panel glass-card" aria-label="Navigation menu">
+      <div className="drawer-header">
+        <div>
+          <p className="drawer-eyebrow">Navigate</p>
+          <h2>HantaWatch atlas</h2>
+        </div>
+        <button type="button" className="drawer-close" onClick={onClose}>
+          Close
+        </button>
+      </div>
 
-        <article className="guide-card">
-          <h3>Intensity scale</h3>
-          <div className="legend-list">
-            <div className="legend-row"><span className="legend-dot legend-dot--yellow"></span><span>Yellow: 1-5 reports</span></div>
-            <div className="legend-row"><span className="legend-dot legend-dot--orange"></span><span>Orange: 6-14 reports</span></div>
-            <div className="legend-row"><span className="legend-dot legend-dot--red"></span><span>Red: 15+ reports</span></div>
-          </div>
-          <p>
-            Marker color intensifies as more reports cluster in the same geolocated area. Click any marker to jump directly into the reports page.
-          </p>
-          <button type="button" className="action-link action-link--ghost" onClick={onOpenReports}>
-            Open reports page
+      <nav className="menu-list">
+        {MENU_ITEMS.map(item => (
+          <button key={item.id} type="button" className="menu-link" onClick={() => onNavigate(item.id)}>
+            <span className="menu-link__eyebrow">{item.eyebrow}</span>
+            <strong>{item.label}</strong>
+            <span>{item.description}</span>
           </button>
-        </article>
-      </div>
-    </PageFrame>
+        ))}
+      </nav>
+
+      <article className="featured-card">
+        <p className="page-eyebrow">Featured outbreak</p>
+        <h3>{FEATURED_OUTBREAK.title}</h3>
+        <p>{FEATURED_OUTBREAK.summary}</p>
+        <div className="featured-card__stats">
+          <span>{FEATURED_OUTBREAK.deaths} deaths</span>
+          <span>{FEATURED_OUTBREAK.cases} cases</span>
+          <span>{outbreakReportCount} related reports</span>
+        </div>
+        <button type="button" className="action-link action-link--ghost" onClick={() => onNavigate('outbreak')}>
+          Open dossier
+        </button>
+      </article>
+    </aside>
   );
 }
 
-function AboutPage({ onClose }) {
+function WelcomeModal({ onClose, onOpenGuide }) {
   return (
-    <PageFrame
-      eyebrow="Project info"
-      title="About HantaWatch"
-      description="All supporting links and credits now live in one place instead of floating around the map."
-      onClose={onClose}
-      className="page-panel--medium"
-    >
-      <div className="about-grid">
-        <article className="about-card">
-          <h3>Valentina Schiavon</h3>
-          <p>
-            Independent project tracking hantavirus-related reports and clustering them on a live world map.
-          </p>
-          <div className="about-links">
-            <a className="action-link action-link--primary" href="https://github.com/valentinaschiavon99" target="_blank" rel="noreferrer">
-              Open GitHub profile
-            </a>
-            <a className="action-link action-link--ghost" href="https://t.me/hantavirus_watch_bot" target="_blank" rel="noreferrer">
-              Telegram alerts
-            </a>
-            <a className="action-link action-link--ghost" href="https://twitter.com/intent/tweet?text=Track%20hantavirus%20outbreaks%20worldwide%20in%20real%20time%20%F0%9F%97%BA%EF%B8%8F&url=https%3A%2F%2Fhantavirus-watch.github.io%2Fhantavirus-visualizer" target="_blank" rel="noreferrer">
-              Share project
-            </a>
+    <div className="modal-shell" role="dialog" aria-modal="true" aria-label="Welcome to the atlas">
+      <div className="modal-backdrop" onClick={onClose}></div>
+      <section className="modal-card glass-card">
+        <div className="modal-header">
+          <div>
+            <p className="page-eyebrow">Welcome</p>
+            <h2>Read the map as a signal atlas</h2>
+            <p>
+              This view combines live alerts, long-horizon risk zones and a curated outbreak dossier in one surface. Use it as a navigation tool, not as a clinical source.
+            </p>
           </div>
-        </article>
+        </div>
 
-        <article className="about-card">
-          <h3>Credits</h3>
-          <ul className="credit-list">
-            <li>Copyright {new Date().getFullYear()} Valentina Schiavon</li>
-            <li><a href="https://leafletjs.com" target="_blank" rel="noreferrer">Leaflet</a></li>
-            <li><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a></li>
-            <li><a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO basemaps</a></li>
-            <li><a href="https://ko-fi.com/hantaviruswatch" target="_blank" rel="noreferrer">Support on Ko-fi</a></li>
-          </ul>
-        </article>
+        <div className="intro-grid">
+          {INTRO_STEPS.map(step => (
+            <article key={step.title} className="intro-card">
+              <h3>{step.title}</h3>
+              <p>{step.description}</p>
+            </article>
+          ))}
+        </div>
+
+        <div className="modal-actions">
+          <button type="button" className="action-link action-link--primary" onClick={onClose}>
+            Start exploring
+          </button>
+          <button type="button" className="action-link action-link--ghost" onClick={onOpenGuide}>
+            Learn about hantavirus
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SupportStrip() {
+  return (
+    <section className="support-strip glass-card" aria-label="Project links">
+      <div>
+        <p className="page-eyebrow">Stay informed</p>
+        <strong>Follow the project</strong>
+        <span>Telegram alerts for fast updates, GitHub for the code, Ko-fi for support.</span>
+      </div>
+      <div className="support-strip__actions">
+        <a className="action-link action-link--ghost" href={SUPPORT_LINKS.telegram} target="_blank" rel="noreferrer">
+          Telegram
+        </a>
+        <a className="action-link action-link--ghost" href={SUPPORT_LINKS.github} target="_blank" rel="noreferrer">
+          GitHub
+        </a>
+        <a className="action-link action-link--primary" href={SUPPORT_LINKS.support} target="_blank" rel="noreferrer">
+          Support
+        </a>
+      </div>
+    </section>
+  );
+}
+
+function ArticlePage({ onClose, outbreakReports, view }) {
+  if (view === 'outbreak') {
+    return (
+      <PageFrame
+        eyebrow="Featured event"
+        title={`${FEATURED_OUTBREAK.title} dossier`}
+        description={FEATURED_OUTBREAK.summary}
+        onClose={onClose}
+        actions={<span className="metric-pill">ETA {FEATURED_OUTBREAK.eta}</span>}
+      >
+        <div className="article-layout">
+          <section className="article-hero-card">
+            <div className="hero-stats">
+              <div><strong>{FEATURED_OUTBREAK.deaths}</strong><span>deaths</span></div>
+              <div><strong>{FEATURED_OUTBREAK.cases}</strong><span>cases</span></div>
+              <div><strong>{outbreakReports.length}</strong><span>linked reports</span></div>
+            </div>
+            <ul className="section-list">
+              {FEATURED_OUTBREAK.bulletPoints.map(point => <li key={point}>{point}</li>)}
+            </ul>
+          </section>
+
+          <section className="section-grid section-grid--two">
+            <SectionCard title="Route markers" body={ROUTE_ALERT.summary} bullets={ROUTE_ALERT.stops.map(stop => `${toTitleCase(stop.type)}: ${stop.title}`)} />
+            <SectionCard title="Why it matters" body="The current signal spike mixes official notices, repatriation stories, local hospital updates and passenger-linked response measures. That combination is why the feed looks broader than a single location-based outbreak." />
+          </section>
+
+          <section className="report-section">
+            <div className="section-heading">
+              <h3>Related reporting</h3>
+              <span>{outbreakReports.length} items in the local dataset</span>
+            </div>
+            <div className="report-grid">
+              {outbreakReports.length ? outbreakReports.slice(0, 24).map(report => (
+                <a key={`${report.link}-${report.published}`} className="report-card" href={report.link} target="_blank" rel="noreferrer">
+                  <div className="report-card__meta">
+                    <span className={getAlertTypeClass(report.alertType)}>{ALERT_TYPE_META[report.alertType].shortLabel}</span>
+                    <span>{formatRelativeTime(report.published)}</span>
+                  </div>
+                  <strong>{report.title}</strong>
+                  <span>{report.locationName}</span>
+                </a>
+              )) : (
+                <div className="empty-card">
+                  <strong>No related items found</strong>
+                  <span>The dossier will populate when outbreak keywords appear in the dataset.</span>
+                </div>
+              )}
+            </div>
+          </section>
+          <SupportStrip />
+        </div>
+      </PageFrame>
+    );
+  }
+
+  if (view === 'hantavirus') {
+    return (
+      <PageFrame eyebrow={HANTAVIRUS_PAGE.eyebrow} title={HANTAVIRUS_PAGE.title} description={HANTAVIRUS_PAGE.intro} onClose={onClose} actions={<span className="metric-pill">{HANTAVIRUS_PAGE.updated}</span>}>
+        <div className="article-layout">
+          <section className="section-grid section-grid--two">
+            {HANTAVIRUS_PAGE.highlights.map(highlight => (
+              <SectionCard key={highlight.title} title={highlight.title} body={highlight.description} />
+            ))}
+          </section>
+          <section className="section-grid section-grid--two">
+            {HANTAVIRUS_PAGE.sections.map(section => (
+              <SectionCard key={section.title} title={section.title} body={section.body} bullets={section.bullets} />
+            ))}
+          </section>
+          <SupportStrip />
+        </div>
+      </PageFrame>
+    );
+  }
+
+  if (view === 'symptoms') {
+    return (
+      <PageFrame eyebrow={SYMPTOMS_PAGE.eyebrow} title={SYMPTOMS_PAGE.title} description={SYMPTOMS_PAGE.intro} onClose={onClose} actions={<span className="metric-pill">{SYMPTOMS_PAGE.updated}</span>}>
+        <div className="article-layout">
+          <article className="warning-card">
+            <p className="page-eyebrow">Emergency threshold</p>
+            <strong>{SYMPTOMS_PAGE.warning}</strong>
+          </article>
+          <section className="section-grid section-grid--three">
+            {SYMPTOMS_PAGE.timelines.map(section => (
+              <SectionCard key={section.title} title={`${section.title} · ${section.subtitle}`} body={section.body} bullets={section.bullets} />
+            ))}
+          </section>
+          <SectionCard title="Diagnosis" body={SYMPTOMS_PAGE.diagnosis} />
+          <SupportStrip />
+        </div>
+      </PageFrame>
+    );
+  }
+
+  if (view === 'about') {
+    return (
+      <PageFrame eyebrow={ABOUT_PAGE.eyebrow} title={ABOUT_PAGE.title} description={ABOUT_PAGE.intro} onClose={onClose}>
+        <div className="article-layout">
+          <section className="section-grid section-grid--three">
+            {ABOUT_PAGE.steps.map(step => (
+              <article key={step.step} className="section-card">
+                <p className="page-eyebrow">{step.step}</p>
+                <h3>{step.title}</h3>
+                <p>{step.description}</p>
+              </article>
+            ))}
+          </section>
+          <section className="section-grid section-grid--two">
+            <SectionCard title="Map layers" body="Each layer answers a different question: where hantavirus is established, where historical burden is high, and where live reporting is currently spiking." bullets={ABOUT_PAGE.layers} />
+            <SectionCard title="Source posture" body="Signals are linked back to primary reporting wherever possible. Supplemental media intelligence helps surface motion faster, but it does not replace official public-health guidance." bullets={ABOUT_PAGE.sources} />
+          </section>
+          <SectionCard title="Known limitations" body="This atlas is intentionally honest about uncertainty. Coverage varies, geocoding is approximate for some items, and public reporting can lag fast-moving events." bullets={ABOUT_PAGE.limitations} />
+          <SupportStrip />
+        </div>
+      </PageFrame>
+    );
+  }
+
+  if (view === 'faq') {
+    return (
+      <PageFrame eyebrow="Reference" title="Frequently asked questions" description="A compact reference for the questions readers usually have first." onClose={onClose}>
+        <div className="article-layout">
+          <section className="faq-list">
+            {FAQ_ITEMS.map(item => (
+              <details key={item.question} className="faq-item">
+                <summary>{item.question}</summary>
+                <p>{item.answer}</p>
+              </details>
+            ))}
+          </section>
+          <SupportStrip />
+        </div>
+      </PageFrame>
+    );
+  }
+
+  return (
+    <PageFrame eyebrow={CONTACT_PAGE.eyebrow} title={CONTACT_PAGE.title} description={CONTACT_PAGE.intro} onClose={onClose}>
+      <div className="article-layout">
+        <section className="section-grid section-grid--two">
+          <SectionCard title="Reach out" body={`Email: ${CONTACT_PAGE.email}`} bullets={CONTACT_PAGE.bullets} />
+          <SectionCard title="Medical note" body={CONTACT_PAGE.disclaimer} />
+        </section>
+        <SupportStrip />
       </div>
     </PageFrame>
   );
@@ -471,16 +832,29 @@ function AboutPage({ onClose }) {
 
 function App() {
   const prefersDarkMode = usePrefersDarkMode();
-  const [markers, setMarkers] = useState([]);
+  const [reports, setReports] = useState([]);
   const [selectedMarkerId, setSelectedMarkerId] = useState('');
-  const [locationFilter, setLocationFilter] = useState('all');
-  const [severityFilter, setSeverityFilter] = useState('all');
   const [totalReports, setTotalReports] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activePage, setActivePage] = useState('');
+  const [activeView, setActiveView] = useState(() => normalizeHashToView(typeof window === 'undefined' ? '' : window.location.hash));
+  const [isFeedOpen, setIsFeedOpen] = useState(false);
+  const [feedSearch, setFeedSearch] = useState('');
+  const [isLegendOpen, setIsLegendOpen] = useState(true);
+  const [isIntroOpen, setIsIntroOpen] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.sessionStorage.getItem('hanta-intro-dismissed') !== '1';
+  });
+  const [showEndemic, setShowEndemic] = useState(true);
+  const [showHistorical, setShowHistorical] = useState(true);
+  const [showRouteLayer, setShowRouteLayer] = useState(true);
+  const [showDetailDrawer, setShowDetailDrawer] = useState(false);
+  const [shareNotice, setShareNotice] = useState('');
   const outbreakDataUrl = `${process.env.PUBLIC_URL}/outbreak.json`;
 
   useEffect(() => {
@@ -495,22 +869,24 @@ function App() {
         })
         .then(data => {
           if (!Array.isArray(data)) {
-            setMarkers([]);
+            setReports([]);
             setTotalReports(0);
-            setLoadError('Invalid data format');
+            setLoadError('Invalid outbreak data payload');
             setIsLoading(false);
             return;
           }
 
+          const hydratedReports = data.map(hydrateReport).sort((left, right) => right.publishedDate - left.publishedDate);
+
           setTotalReports(data.length);
           setLoadError('');
-          setMarkers(buildLocationMarkers(data));
+          setReports(hydratedReports);
           setLastUpdated(new Date());
           setIsLoading(false);
         })
         .catch(error => {
           console.error('Data loading error:', error);
-          setMarkers([]);
+          setReports([]);
           setTotalReports(0);
           setLoadError('Unable to load outbreak data');
           setIsLoading(false);
@@ -530,11 +906,29 @@ function App() {
       }
 
       setIsMenuOpen(false);
-      setActivePage('');
+      setIsFeedOpen(false);
+      setShowDetailDrawer(false);
+
+      if (activeView !== 'map') {
+        updateHash('map');
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeView]);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setActiveView(normalizeHashToView(window.location.hash));
+    };
+
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   useEffect(() => {
@@ -542,58 +936,122 @@ function App() {
       return undefined;
     }
 
-    const shouldLock = Boolean(activePage) || isMenuOpen;
+    const shouldLock = activeView !== 'map' || isMenuOpen || isFeedOpen || isIntroOpen;
     document.body.classList.toggle('is-scroll-locked', shouldLock);
 
     return () => {
       document.body.classList.remove('is-scroll-locked');
     };
-  }, [activePage, isMenuOpen]);
-
-  const filteredMarkers = markers.filter(marker => {
-    const matchesLocation = locationFilter === 'all' || marker.locationName === locationFilter;
-    const matchesSeverity = severityFilter === 'all' || getSeverityKey(marker.reportCount) === severityFilter;
-
-    return matchesLocation && matchesSeverity;
-  });
+  }, [activeView, isFeedOpen, isIntroOpen, isMenuOpen]);
 
   useEffect(() => {
-    if (!filteredMarkers.length) {
-      if (selectedMarkerId) {
-        setSelectedMarkerId('');
-      }
+    setIsMenuOpen(false);
+    setIsFeedOpen(false);
 
+    if (activeView !== 'map') {
+      setShowDetailDrawer(false);
+    }
+  }, [activeView]);
+
+  useEffect(() => {
+    if (!shareNotice) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => setShareNotice(''), 2200);
+    return () => window.clearTimeout(timeoutId);
+  }, [shareNotice]);
+
+  const markers = buildLocationMarkers(reports);
+  const featuredMarker = markers.find(marker => marker.id === selectedMarkerId) || null;
+  const countryCount = new Set(reports.map(report => report.country).filter(Boolean)).size;
+  const geolocatedReports = reports.filter(report => report.hasCoordinates).length;
+  const sourceCount = new Set(reports.map(report => report.source).filter(Boolean)).size;
+  const outbreakReports = reports.filter(report => report.isFeaturedOutbreak);
+  const filteredFeed = reports.filter(report => report.searchText.includes(feedSearch.trim().toLowerCase()));
+  const tileUrl = prefersDarkMode ? DARK_TILE_URL : LIGHT_TILE_URL;
+  const lastUpdatedLabel = lastUpdated ? formatRelativeTime(lastUpdated) : 'No update yet';
+  const homeMetrics = [
+    { label: 'Countries', value: countryCount },
+    { label: 'Signals', value: totalReports },
+    { label: 'Mapped', value: geolocatedReports },
+    { label: 'Sources', value: sourceCount },
+  ];
+
+  useEffect(() => {
+    if (!markers.length) {
+      setSelectedMarkerId('');
       return;
     }
 
-    const hasSelectedMarker = filteredMarkers.some(marker => marker.id === selectedMarkerId);
+    const hasSelectedMarker = markers.some(marker => marker.id === selectedMarkerId);
 
     if (!hasSelectedMarker) {
-      setSelectedMarkerId(filteredMarkers[0].id);
+      setSelectedMarkerId(markers[0].id);
     }
-  }, [filteredMarkers, selectedMarkerId]);
+  }, [markers, selectedMarkerId]);
 
-  const geolocatedReports = markers.reduce((reportCount, marker) => reportCount + marker.reportCount, 0);
-  const filteredReportCount = filteredMarkers.reduce((reportCount, marker) => reportCount + marker.reportCount, 0);
-  const featuredMarker = filteredMarkers.find(marker => marker.id === selectedMarkerId) || filteredMarkers[0] || null;
-  const locationOptions = Array.from(new Set(markers.map(marker => marker.locationName))).sort((left, right) => left.localeCompare(right));
-  const tileUrl = prefersDarkMode ? DARK_TILE_URL : LIGHT_TILE_URL;
-  const homeStats = [
-    { label: 'reports', value: totalReports },
-    { label: 'clusters', value: markers.length },
-    { label: 'mapped', value: geolocatedReports },
-  ];
+  const dismissIntro = () => {
+    setIsIntroOpen(false);
 
-  const openPage = pageId => {
-    setActivePage(pageId);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem('hanta-intro-dismissed', '1');
+    }
+  };
+
+  const navigateToView = viewId => {
+    setActiveView(viewId);
+    updateHash(viewId);
     setIsMenuOpen(false);
   };
 
-  const openReportsPage = () => openPage('reports');
-
   const handleMarkerClick = markerId => {
     setSelectedMarkerId(markerId);
-    openPage('reports');
+    setShowDetailDrawer(true);
+    setIsFeedOpen(false);
+    setActiveView('map');
+    updateHash('map');
+  };
+
+  const handleShare = async () => {
+    const shareUrl = typeof window === 'undefined' ? '' : window.location.href;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'HantaWatch signal atlas',
+          text: SUPPORT_LINKS.shareText,
+          url: shareUrl,
+        });
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareUrl);
+      setShareNotice('Link copied');
+    } catch (error) {
+      console.error('Share error:', error);
+      setShareNotice('Share unavailable');
+    }
+  };
+
+  const handleFeedItemSelect = report => {
+    if (!report.hasCoordinates) {
+      window.open(report.link, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    const matchingMarker = markers.find(marker => marker.locationName === report.locationName);
+
+    if (matchingMarker) {
+      setSelectedMarkerId(matchingMarker.id);
+      setShowDetailDrawer(true);
+      setIsFeedOpen(false);
+      setActiveView('map');
+      updateHash('map');
+      return;
+    }
+
+    window.open(report.link, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -601,117 +1059,102 @@ function App() {
       <div className="hud-layer">
         <div className="top-bar">
           <div className="brand-chip glass-card">
-            <span className="brand-chip__eyebrow">Hantavirus Watch</span>
-            <strong className="brand-chip__title">Live map</strong>
+            <span className="brand-chip__eyebrow">HantaWatch</span>
+            <strong className="brand-chip__title">Signal atlas</strong>
           </div>
 
-          <div className={`menu-wrap ${isMenuOpen ? 'is-open' : ''}`}>
+          <div className="top-actions">
+            <button type="button" className="top-action top-action--ghost glass-card" onClick={handleShare}>
+              Share
+            </button>
+            <a className="top-action top-action--ghost glass-card" href={SUPPORT_LINKS.support} target="_blank" rel="noreferrer">
+              Support
+            </a>
             <button
               type="button"
               className="menu-toggle glass-card"
-              aria-haspopup="menu"
+              aria-haspopup="dialog"
               aria-expanded={isMenuOpen}
               onClick={() => setIsMenuOpen(open => !open)}
             >
               Menu
             </button>
-
-            {isMenuOpen && (
-              <div className="menu-dropdown glass-card" role="menu" aria-label="Top navigation">
-                {MENU_PAGES.map(page => (
-                  <button
-                    key={page.id}
-                    type="button"
-                    className="menu-item"
-                    onClick={() => openPage(page.id)}
-                  >
-                    <span className="menu-item__eyebrow">{page.eyebrow}</span>
-                    <span className="menu-item__title">{page.title}</span>
-                    <span className="menu-item__desc">{page.description}</span>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         </div>
 
         <div className="home-stage">
-          <div className="status-row" aria-label="Live counters">
-            {homeStats.map(stat => (
-              <button
-                key={stat.label}
-                type="button"
-                className="stat-card glass-card"
-                aria-label={`Open reports page: ${stat.label} ${stat.value}`}
-                onClick={openReportsPage}
-              >
-                <span className="stat-card__value">{stat.value}</span>
-                <span className="stat-card__label">{stat.label}</span>
+          <section className="hero-panel glass-card" aria-label="Signal atlas summary">
+            <div className="hero-panel__eyebrow-row">
+              <span className="brand-chip__eyebrow">A map-first view on hantavirus activity</span>
+              <span className={`status-chip ${isLoading ? 'status-chip--loading' : loadError ? 'status-chip--error' : 'status-chip--live'}`}>
+                {isLoading ? 'Refreshing' : loadError ? 'Attention' : `Updated ${lastUpdatedLabel}`}
+              </span>
+            </div>
+            <h1 className="hero-title">Live global hantavirus signals with outbreak context.</h1>
+            <p className="hero-copy">
+              This atlas groups the current dataset into mapped signal clusters, layers in endemic and historical context, and keeps a focused outbreak dossier one click away.
+            </p>
+            <div className="hero-actions">
+              <button type="button" className="action-link action-link--primary" onClick={() => setIsFeedOpen(true)}>
+                Open news feed
               </button>
-            ))}
+              <button type="button" className="action-link action-link--ghost" onClick={() => navigateToView('outbreak')}>
+                Featured outbreak
+              </button>
+            </div>
+
+            {loadError ? <p className="hero-error">{loadError}</p> : null}
+
+            <div className="metric-grid" aria-label="Live counters">
+              {homeMetrics.map(metric => (
+                <article key={metric.label} className="metric-card">
+                  <strong>{formatNumber(metric.value)}</strong>
+                  <span>{metric.label}</span>
+                </article>
+              ))}
+            </div>
+
+            <button type="button" className="featured-banner" onClick={() => navigateToView('outbreak')}>
+              <span className="featured-banner__eyebrow">Featured event</span>
+              <strong>{FEATURED_OUTBREAK.shortTitle}</strong>
+              <span>{FEATURED_OUTBREAK.deaths} deaths · {FEATURED_OUTBREAK.cases} cases · ETA {FEATURED_OUTBREAK.eta}</span>
+            </button>
+          </section>
+
+          <div className="floating-tools">
+            <button type="button" className="floating-button glass-card" onClick={() => setIsFeedOpen(true)} aria-expanded={isFeedOpen}>
+              News feed · {formatNumber(totalReports)}
+            </button>
+            <LegendPanel
+              isExpanded={isLegendOpen}
+              onToggle={() => setIsLegendOpen(open => !open)}
+              showEndemic={showEndemic}
+              showHistorical={showHistorical}
+              showRouteLayer={showRouteLayer}
+              onToggleEndemic={() => setShowEndemic(value => !value)}
+              onToggleHistorical={() => setShowHistorical(value => !value)}
+              onToggleRouteLayer={() => setShowRouteLayer(value => !value)}
+            />
           </div>
         </div>
 
-        <a
-          className="donate-fab glass-card"
-          href="https://ko-fi.com/hantaviruswatch"
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Support this project on Ko-fi"
-        >
-          <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-            <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.076-.057-.108-.09-.108-.09-.443-.441-3.368-3.049-4.034-3.954-.709-.965-1.041-2.7-.091-3.71.951-1.01 3.005-1.086 4.363.407 0 0 1.565-1.782 3.468-.963 1.904.82 1.832 3.011.723 4.311zm6.173.478c-.928.116-1.682.028-1.682.028V7.284h1.77s1.971.551 1.971 2.638c0 1.913-.985 2.667-2.059 3.015z" />
-          </svg>
-          <span>Support</span>
-        </a>
+        <SupportStrip />
       </div>
 
-      {activePage && (
+      {isMenuOpen ? <MenuDrawer onClose={() => setIsMenuOpen(false)} onNavigate={navigateToView} outbreakReportCount={outbreakReports.length} /> : null}
+      {isFeedOpen ? <NewsFeedDrawer feedSearch={feedSearch} onClose={() => setIsFeedOpen(false)} onFeedSearch={setFeedSearch} onSelectReport={handleFeedItemSelect} reports={filteredFeed.slice(0, 120)} /> : null}
+      {showDetailDrawer && featuredMarker ? <ClusterDrawer cluster={featuredMarker} onClose={() => setShowDetailDrawer(false)} /> : null}
+      {isIntroOpen && activeView === 'map' ? <WelcomeModal onClose={dismissIntro} onOpenGuide={() => { dismissIntro(); navigateToView('hantavirus'); }} /> : null}
+
+      {activeView !== 'map' ? (
         <div className="page-layer">
-          <button
-            type="button"
-            className="page-backdrop"
-            aria-label="Close current page"
-            onClick={() => setActivePage('')}
-          />
-
           <div className="page-shell">
-            {activePage === 'reports' && (
-              <ReportsPage
-                featuredMarker={featuredMarker}
-                filteredMarkers={filteredMarkers}
-                filteredReportCount={filteredReportCount}
-                locationFilter={locationFilter}
-                locationOptions={locationOptions}
-                onClose={() => setActivePage('')}
-                onResetFilters={() => {
-                  setLocationFilter('all');
-                  setSeverityFilter('all');
-                }}
-                onSelectMarker={setSelectedMarkerId}
-                onSetLocationFilter={setLocationFilter}
-                onSetSeverityFilter={setSeverityFilter}
-                severityFilter={severityFilter}
-              />
-            )}
-
-            {activePage === 'guide' && (
-              <GuidePage
-                geolocatedReports={geolocatedReports}
-                isLoading={isLoading}
-                lastUpdated={lastUpdated}
-                loadError={loadError}
-                markers={markers}
-                onClose={() => setActivePage('')}
-                onOpenReports={openReportsPage}
-                totalReports={totalReports}
-              />
-            )}
-
-            {activePage === 'about' && <AboutPage onClose={() => setActivePage('')} />}
+            <ArticlePage outbreakReports={outbreakReports} view={activeView} onClose={() => navigateToView('map')} />
           </div>
         </div>
-      )}
+      ) : null}
+
+      {shareNotice ? <div className="share-toast glass-card">{shareNotice}</div> : null}
 
       <MapContainer
         center={MAP_CENTER}
@@ -721,25 +1164,53 @@ function App() {
         attributionControl={false}
         className="signal-map"
       >
-        <MapViewportController activePage={activePage} selectedMarker={featuredMarker} />
+        <MapViewportController activeView={activeView} selectedMarker={featuredMarker} showDetailDrawer={showDetailDrawer} />
         <TileLayer url={tileUrl} />
-        {filteredMarkers.map(marker => (
+        <ZoomControl position="bottomright" />
+
+        {showEndemic ? ENDEMIC_ZONES.map(zone => (
+          <Polygon key={zone.id} positions={zone.coordinates} pathOptions={{ className: 'endemic-zone' }}>
+            <Tooltip sticky>{zone.name}</Tooltip>
+          </Polygon>
+        )) : null}
+
+        {showHistorical ? HISTORICAL_CASES.map(entry => (
           <CircleMarker
-            key={marker.id}
-            center={marker.coordinates}
-            radius={Math.min(26, 8 + marker.reportCount * 2.4)}
+            key={entry.id}
+            center={entry.coordinates}
+            radius={Math.min(28, 4 + Math.sqrt(entry.cases) / 1.5)}
             pathOptions={{
-              className: getMarkerClassName(marker.reportCount, marker.id === selectedMarkerId),
-              color: marker.id === selectedMarkerId ? '#ffffff' : getSeverityColor(marker.reportCount),
-              fillColor: getSeverityColor(marker.reportCount),
-              fillOpacity: marker.id === selectedMarkerId ? 0.92 : 0.78,
-              weight: marker.id === selectedMarkerId ? 2.8 : 1.2,
-              opacity: 1,
+              className: 'historical-marker',
+              color: 'rgba(11, 29, 43, 0.32)',
+              fillColor: 'rgba(11, 29, 43, 0.18)',
+              fillOpacity: 0.88,
+              weight: 1.2,
             }}
-            eventHandlers={{
-              click: () => handleMarkerClick(marker.id),
-            }}
-          />
+          >
+            <Tooltip sticky>{entry.label}: {formatNumber(entry.cases)} cases</Tooltip>
+          </CircleMarker>
+        )) : null}
+
+        {showRouteLayer ? (
+          <>
+            <Polyline positions={ROUTE_ALERT.stops.map(stop => stop.coordinates)} pathOptions={{ className: 'route-line' }} />
+            {ROUTE_ALERT.stops.map(stop => (
+              <Marker key={stop.id} position={stop.coordinates} icon={buildRouteIcon(stop)}>
+                <Tooltip sticky>{`${toTitleCase(stop.type)}: ${stop.title}`}</Tooltip>
+              </Marker>
+            ))}
+          </>
+        ) : null}
+
+        {markers.map(marker => (
+          <Marker
+            key={marker.id}
+            position={marker.coordinates}
+            icon={buildAlertIcon(marker, marker.id === selectedMarkerId && showDetailDrawer)}
+            eventHandlers={{ click: () => handleMarkerClick(marker.id) }}
+          >
+            <Tooltip sticky>{`${marker.locationName}: ${formatNumber(marker.reportCount)} signals`}</Tooltip>
+          </Marker>
         ))}
       </MapContainer>
     </div>
