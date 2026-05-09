@@ -537,6 +537,19 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const shouldLock = Boolean(activePage) || isMenuOpen;
+    document.body.classList.toggle('is-scroll-locked', shouldLock);
+
+    return () => {
+      document.body.classList.remove('is-scroll-locked');
+    };
+  }, [activePage, isMenuOpen]);
+
   const filteredMarkers = markers.filter(marker => {
     const matchesLocation = locationFilter === 'all' || marker.locationName === locationFilter;
     const matchesSeverity = severityFilter === 'all' || getSeverityKey(marker.reportCount) === severityFilter;
