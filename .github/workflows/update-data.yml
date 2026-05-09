@@ -8,13 +8,10 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   update-and-deploy:
     runs-on: ubuntu-latest
-    environment: github-pages
 
     steps:
       - uses: actions/checkout@v4
@@ -42,10 +39,11 @@ jobs:
         working-directory: hanta-visualizer
         run: npm run build
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
           publish_dir: hanta-visualizer/build
 
       - name: Send Telegram update
