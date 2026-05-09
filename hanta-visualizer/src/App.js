@@ -598,71 +598,73 @@ function App() {
 
   return (
     <div className={`app-shell ${prefersDarkMode ? 'theme-dark' : 'theme-light'}`}>
-      <div className="top-bar">
-        <div className="brand-chip glass-card">
-          <span className="brand-chip__eyebrow">Hantavirus Watch</span>
-          <strong className="brand-chip__title">Live map</strong>
-        </div>
+      <div className="hud-layer">
+        <div className="top-bar">
+          <div className="brand-chip glass-card">
+            <span className="brand-chip__eyebrow">Hantavirus Watch</span>
+            <strong className="brand-chip__title">Live map</strong>
+          </div>
 
-        <div className={`menu-wrap ${isMenuOpen ? 'is-open' : ''}`}>
-          <button
-            type="button"
-            className="menu-toggle glass-card"
-            aria-haspopup="menu"
-            aria-expanded={isMenuOpen}
-            onClick={() => setIsMenuOpen(open => !open)}
-          >
-            Menu
-          </button>
-
-          {isMenuOpen && (
-            <div className="menu-dropdown glass-card" role="menu" aria-label="Top navigation">
-              {MENU_PAGES.map(page => (
-                <button
-                  key={page.id}
-                  type="button"
-                  className="menu-item"
-                  onClick={() => openPage(page.id)}
-                >
-                  <span className="menu-item__eyebrow">{page.eyebrow}</span>
-                  <span className="menu-item__title">{page.title}</span>
-                  <span className="menu-item__desc">{page.description}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="home-stage">
-        <div className="status-row" aria-label="Live counters">
-          {homeStats.map(stat => (
+          <div className={`menu-wrap ${isMenuOpen ? 'is-open' : ''}`}>
             <button
-              key={stat.label}
               type="button"
-              className="stat-card glass-card"
-              aria-label={`Open reports page: ${stat.label} ${stat.value}`}
-              onClick={openReportsPage}
+              className="menu-toggle glass-card"
+              aria-haspopup="menu"
+              aria-expanded={isMenuOpen}
+              onClick={() => setIsMenuOpen(open => !open)}
             >
-              <span className="stat-card__value">{stat.value}</span>
-              <span className="stat-card__label">{stat.label}</span>
+              Menu
             </button>
-          ))}
-        </div>
-      </div>
 
-      <a
-        className="donate-fab glass-card"
-        href="https://ko-fi.com/hantaviruswatch"
-        target="_blank"
-        rel="noreferrer"
-        aria-label="Support this project on Ko-fi"
-      >
-        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-          <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.076-.057-.108-.09-.108-.09-.443-.441-3.368-3.049-4.034-3.954-.709-.965-1.041-2.7-.091-3.71.951-1.01 3.005-1.086 4.363.407 0 0 1.565-1.782 3.468-.963 1.904.82 1.832 3.011.723 4.311zm6.173.478c-.928.116-1.682.028-1.682.028V7.284h1.77s1.971.551 1.971 2.638c0 1.913-.985 2.667-2.059 3.015z" />
-        </svg>
-        <span>Support</span>
-      </a>
+            {isMenuOpen && (
+              <div className="menu-dropdown glass-card" role="menu" aria-label="Top navigation">
+                {MENU_PAGES.map(page => (
+                  <button
+                    key={page.id}
+                    type="button"
+                    className="menu-item"
+                    onClick={() => openPage(page.id)}
+                  >
+                    <span className="menu-item__eyebrow">{page.eyebrow}</span>
+                    <span className="menu-item__title">{page.title}</span>
+                    <span className="menu-item__desc">{page.description}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="home-stage">
+          <div className="status-row" aria-label="Live counters">
+            {homeStats.map(stat => (
+              <button
+                key={stat.label}
+                type="button"
+                className="stat-card glass-card"
+                aria-label={`Open reports page: ${stat.label} ${stat.value}`}
+                onClick={openReportsPage}
+              >
+                <span className="stat-card__value">{stat.value}</span>
+                <span className="stat-card__label">{stat.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <a
+          className="donate-fab glass-card"
+          href="https://ko-fi.com/hantaviruswatch"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Support this project on Ko-fi"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.076-.057-.108-.09-.108-.09-.443-.441-3.368-3.049-4.034-3.954-.709-.965-1.041-2.7-.091-3.71.951-1.01 3.005-1.086 4.363.407 0 0 1.565-1.782 3.468-.963 1.904.82 1.832 3.011.723 4.311zm6.173.478c-.928.116-1.682.028-1.682.028V7.284h1.77s1.971.551 1.971 2.638c0 1.913-.985 2.667-2.059 3.015z" />
+          </svg>
+          <span>Support</span>
+        </a>
+      </div>
 
       {activePage && (
         <div className="page-layer">

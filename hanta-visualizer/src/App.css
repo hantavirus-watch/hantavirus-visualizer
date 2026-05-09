@@ -123,6 +123,7 @@ body.is-scroll-locked {
   box-shadow: var(--shadow);
 }
 
+.hud-layer,
 .top-bar,
 .home-stage,
 .donate-fab,
@@ -130,14 +131,26 @@ body.is-scroll-locked {
   z-index: 3;
 }
 
-.top-bar {
+.hud-layer {
   position: absolute;
-  top: calc(16px + env(safe-area-inset-top));
-  left: calc(16px + env(safe-area-inset-left));
-  right: calc(16px + env(safe-area-inset-right));
-  display: flex;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 16px;
+  padding:
+    calc(16px + env(safe-area-inset-top))
+    calc(16px + env(safe-area-inset-right))
+    calc(16px + env(safe-area-inset-bottom))
+    calc(16px + env(safe-area-inset-left));
+  pointer-events: none;
+}
+
+.top-bar {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: flex-start;
-  justify-content: space-between;
   gap: 16px;
   pointer-events: none;
 }
@@ -181,6 +194,7 @@ body.is-scroll-locked {
 
 .menu-wrap {
   position: relative;
+  justify-self: end;
 }
 
 .menu-toggle {
@@ -206,6 +220,8 @@ body.is-scroll-locked {
   top: calc(100% + 10px);
   right: 0;
   width: min(360px, calc(100vw - 32px));
+  max-height: min(420px, calc(100dvh - 120px));
+  overflow: auto;
   border-radius: 24px;
   padding: 12px;
   display: grid;
@@ -256,11 +272,10 @@ body.is-scroll-locked {
 }
 
 .home-stage {
-  position: absolute;
-  top: 110px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(760px, calc(100% - 32px));
+  position: relative;
+  z-index: 1;
+  width: min(760px, 100%);
+  justify-self: center;
   pointer-events: none;
 }
 
@@ -305,9 +320,11 @@ body.is-scroll-locked {
 }
 
 .donate-fab {
-  position: absolute;
-  top: 116px;
-  left: 16px;
+  position: relative;
+  z-index: 1;
+  justify-self: start;
+  align-self: end;
+  width: fit-content;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -334,6 +351,7 @@ body.is-scroll-locked {
 .page-layer {
   position: absolute;
   inset: 0;
+  z-index: 4;
 }
 
 .page-backdrop {
@@ -832,6 +850,14 @@ body.is-scroll-locked {
     grid-template-columns: 1fr;
   }
 
+  .hud-layer {
+    padding:
+      calc(16px + env(safe-area-inset-top))
+      calc(16px + env(safe-area-inset-right))
+      calc(16px + env(safe-area-inset-bottom))
+      calc(16px + env(safe-area-inset-left));
+  }
+
   .detail-stats,
   .guide-metrics {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -844,26 +870,32 @@ body.is-scroll-locked {
 
 /* Tablets and small laptops */
 @media (max-width: 860px) {
+  .hud-layer {
+    gap: 14px;
+  }
+
   .home-stage {
-    top: calc(96px + env(safe-area-inset-top));
-    width: calc(100% - 28px);
+    width: 100%;
   }
 
   .donate-fab {
-    top: auto;
-    bottom: calc(16px + env(safe-area-inset-bottom));
-    left: calc(14px + env(safe-area-inset-left));
+    margin-top: 4px;
   }
 }
 
 /* Phones */
 @media (max-width: 640px) {
+  .hud-layer {
+    gap: 12px;
+    padding:
+      calc(10px + env(safe-area-inset-top))
+      calc(10px + env(safe-area-inset-right))
+      calc(14px + env(safe-area-inset-bottom))
+      calc(10px + env(safe-area-inset-left));
+  }
+
   .top-bar {
-    top: calc(10px + env(safe-area-inset-top));
-    left: calc(10px + env(safe-area-inset-left));
-    right: calc(10px + env(safe-area-inset-right));
     gap: 10px;
-    flex-direction: row;
     align-items: center;
   }
 
@@ -916,13 +948,16 @@ body.is-scroll-locked {
   }
 
   .home-stage {
-    top: calc(74px + env(safe-area-inset-top));
-    width: calc(100% - 20px);
+    width: 100%;
   }
 
   .status-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  .stat-card:last-child {
+    grid-column: 1 / -1;
   }
 
   .stat-card {
@@ -942,8 +977,6 @@ body.is-scroll-locked {
   }
 
   .donate-fab {
-    bottom: calc(14px + env(safe-area-inset-bottom));
-    left: calc(12px + env(safe-area-inset-left));
     padding: 9px 14px 9px 11px;
     font-size: 0.8rem;
   }
@@ -1077,6 +1110,14 @@ body.is-scroll-locked {
 
 /* Small phones */
 @media (max-width: 380px) {
+  .status-row {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card:last-child {
+    grid-column: auto;
+  }
+
   .brand-chip__eyebrow {
     display: none;
   }
@@ -1110,8 +1151,8 @@ body.is-scroll-locked {
 
 /* Short landscape phones */
 @media (max-height: 520px) and (orientation: landscape) {
-  .home-stage {
-    top: calc(64px + env(safe-area-inset-top));
+  .hud-layer {
+    gap: 10px;
   }
 
   .stat-card {
