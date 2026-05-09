@@ -141,8 +141,8 @@ def group_to_clusters(data: list[dict]) -> list[dict]:
 
 def main():
     if not TOKEN or not CHAT_ID:
-        print("[ERROR] TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set.")
-        sys.exit(1)
+        print("Skipping Telegram update: TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are not set.")
+        return
 
     if not OUTBREAK_JSON.exists():
         print(f"[ERROR] {OUTBREAK_JSON} not found. Run scraper.py first.")

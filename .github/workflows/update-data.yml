@@ -12,6 +12,9 @@ permissions:
 jobs:
   update-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +50,9 @@ jobs:
           publish_dir: hanta-visualizer/build
 
       - name: Send Telegram update
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        if: ${{ env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
         run: python3 telegram_bot.py
+
+      - name: Skip Telegram update when secrets are missing
+        if: ${{ env.TELEGRAM_BOT_TOKEN == '' || env.TELEGRAM_CHAT_ID == '' }}
+        run: echo "Skipping Telegram update because TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not configured."
