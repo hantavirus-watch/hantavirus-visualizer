@@ -12,6 +12,7 @@ import {
   useMap,
 } from 'react-leaflet';
 import './App.css';
+import ClusteredMarkers from './ClusteredMarkers';
 import Sidebar from './Sidebar';
 import TooltipPopup from './TooltipPopup';
 import Legend from './Legend';
@@ -42,32 +43,6 @@ const DEFAULT_LEGEND_ITEMS = [
   { label: 'Recovered', color: '#22d3ee' },
   { label: 'Fatal', color: '#ef4444' },
 ];
-function App() {
-  const [filters, setFilters] = useState({
-    startDate: '',
-    endDate: '',
-    strain: '',
-    status: '',
-  });
-  // Example: legendItems could be derived from map state/layers
-  const [legendItems, setLegendItems] = useState(DEFAULT_LEGEND_ITEMS);
-
-  // ...existing app logic...
-
-  return (
-    <div className="min-h-screen bg-background text-white flex">
-      <Sidebar filters={filters} setFilters={setFilters} />
-      <main className="flex-1 relative">
-        {/* Map and other content go here */}
-        {/* Example: <MapComponent ... /> */}
-        {/* Example: <TooltipPopup caseData={selectedCase} /> */}
-        <Legend legendItems={legendItems} />
-      </main>
-    </div>
-  );
-}
-
-export default App;
 const MAP_CENTER = [20, 0];
 const MAP_ZOOM = 2;
 const MAP_FOCUS_ZOOM = 4;
@@ -1239,16 +1214,13 @@ function App() {
           </>
         ) : null}
 
-        {markers.map(marker => (
-          <Marker
-            key={marker.id}
-            position={marker.coordinates}
-            icon={buildAlertIcon(marker, marker.id === selectedMarkerId && showDetailDrawer)}
-            eventHandlers={{ click: () => handleMarkerClick(marker.id) }}
-          >
-            <Tooltip sticky>{`${marker.locationName}: ${formatNumber(marker.reportCount)} signals`}</Tooltip>
-          </Marker>
-        ))}
+        <ClusteredMarkers
+          markers={markers}
+          onMarkerClick={handleMarkerClick}
+          buildAlertIcon={buildAlertIcon}
+          selectedMarkerId={selectedMarkerId}
+          showDetailDrawer={showDetailDrawer}
+        />
       </MapContainer>
     </div>
   );
