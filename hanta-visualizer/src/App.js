@@ -12,6 +12,9 @@ import {
   useMap,
 } from 'react-leaflet';
 import './App.css';
+import Sidebar from './Sidebar';
+import TooltipPopup from './TooltipPopup';
+import Legend from './Legend';
 import 'leaflet/dist/leaflet.css';
 import {
   ABOUT_PAGE,
@@ -31,6 +34,40 @@ import {
 } from './siteContent';
 
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
+
+// Example legend items (update dynamically as needed)
+const DEFAULT_LEGEND_ITEMS = [
+  { label: 'Confirmed', color: '#38bdf8' },
+  { label: 'Suspected', color: '#fbbf24' },
+  { label: 'Recovered', color: '#22d3ee' },
+  { label: 'Fatal', color: '#ef4444' },
+];
+function App() {
+  const [filters, setFilters] = useState({
+    startDate: '',
+    endDate: '',
+    strain: '',
+    status: '',
+  });
+  // Example: legendItems could be derived from map state/layers
+  const [legendItems, setLegendItems] = useState(DEFAULT_LEGEND_ITEMS);
+
+  // ...existing app logic...
+
+  return (
+    <div className="min-h-screen bg-background text-white flex">
+      <Sidebar filters={filters} setFilters={setFilters} />
+      <main className="flex-1 relative">
+        {/* Map and other content go here */}
+        {/* Example: <MapComponent ... /> */}
+        {/* Example: <TooltipPopup caseData={selectedCase} /> */}
+        <Legend legendItems={legendItems} />
+      </main>
+    </div>
+  );
+}
+
+export default App;
 const MAP_CENTER = [20, 0];
 const MAP_ZOOM = 2;
 const MAP_FOCUS_ZOOM = 4;
