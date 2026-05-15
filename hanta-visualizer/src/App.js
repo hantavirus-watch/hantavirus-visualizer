@@ -1017,12 +1017,19 @@ function App() {
     setIsMenuOpen(false);
   };
 
+
   const handleMarkerClick = markerId => {
     setSelectedMarkerId(markerId);
     setShowDetailDrawer(true);
     setIsFeedOpen(false);
     setActiveView('map');
     updateHash('map');
+  };
+
+  // Close popup when map is clicked (handled in ClusteredMarkers, but keep state in sync)
+  const handleClosePopup = () => {
+    setShowDetailDrawer(false);
+    setSelectedMarkerId('');
   };
 
   const handleShare = async () => {
@@ -1220,6 +1227,7 @@ function App() {
           buildAlertIcon={buildAlertIcon}
           selectedMarkerId={selectedMarkerId}
           showDetailDrawer={showDetailDrawer}
+          onClosePopup={handleClosePopup}
         />
       </MapContainer>
     </div>
