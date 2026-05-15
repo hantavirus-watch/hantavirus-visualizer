@@ -18,18 +18,7 @@ import TooltipPopup from './TooltipPopup';
 import Legend from './Legend';
 import 'leaflet/dist/leaflet.css';
 
-// Responsive utility
-function useIsMobile(breakpoint = 760) {
-  const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth <= breakpoint : false
-  );
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= breakpoint);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [breakpoint]);
-  return isMobile;
-}
+
 import {
   ABOUT_PAGE,
   ALERT_TYPE_META,
@@ -46,6 +35,19 @@ import {
   SUPPORT_LINKS,
   SYMPTOMS_PAGE,
 } from './siteContent';
+
+// Responsive utility
+function useIsMobile(breakpoint = 760) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth <= breakpoint : false
+  );
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= breakpoint);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [breakpoint]);
+  return isMobile;
+}
 
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 
