@@ -14,6 +14,10 @@ import {
 import './App.css';
 import ClusteredMarkers from './ClusteredMarkers';
 import Sidebar from './Sidebar';
+import TooltipPopup from './TooltipPopup';
+import Legend from './Legend';
+import 'leaflet/dist/leaflet.css';
+
 // Responsive utility
 function useIsMobile(breakpoint = 760) {
   const [isMobile, setIsMobile] = useState(() =>
@@ -26,9 +30,6 @@ function useIsMobile(breakpoint = 760) {
   }, [breakpoint]);
   return isMobile;
 }
-import TooltipPopup from './TooltipPopup';
-import Legend from './Legend';
-import 'leaflet/dist/leaflet.css';
 import {
   ABOUT_PAGE,
   ALERT_TYPE_META,
