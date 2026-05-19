@@ -1,21 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import L from 'leaflet';
-import {
-  CircleMarker,
-  MapContainer,
-  Marker,
-  Polygon,
-  Polyline,
-  TileLayer,
-  Tooltip,
-  ZoomControl,
-  useMap,
 } from 'react-leaflet';
 import './App.css';
-import ClusteredMarkers from './ClusteredMarkers';
 import Sidebar from './Sidebar';
-import TooltipPopup from './TooltipPopup';
-import Legend from './Legend';
 import 'leaflet/dist/leaflet.css';
 
 
@@ -51,13 +38,7 @@ function useIsMobile(breakpoint = 760) {
 
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 
-// Example legend items (update dynamically as needed)
-const DEFAULT_LEGEND_ITEMS = [
-  { label: 'Confirmed', color: '#38bdf8' },
-  { label: 'Suspected', color: '#fbbf24' },
-  { label: 'Recovered', color: '#22d3ee' },
-  { label: 'Fatal', color: '#ef4444' },
-];
+// (Removed unused constant DEFAULT_LEGEND_ITEMS)
 const MAP_CENTER = [20, 0];
 const MAP_ZOOM = 2;
 const MAP_FOCUS_ZOOM = 4;
