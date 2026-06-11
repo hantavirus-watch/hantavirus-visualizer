@@ -1,2 +1,3 @@
-# No third-party dependencies — scraper uses only Python stdlib
-# (urllib, xml.etree, json, re, datetime, pathlib)
+# No third-party dependencies — telegram_bot.py uses only the Python stdlib
+# (urllib, json, hashlib, html, pathlib). Outbreak data is produced by the
+# separate hantavirus-data-engine repo and fetched by the update workflow.
