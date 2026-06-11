@@ -1,8 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import L from 'leaflet';
+import {
+  CircleMarker,
+  MapContainer,
+  Marker,
+  Polygon,
+  Polyline,
+  TileLayer,
+  Tooltip,
+  ZoomControl,
+  useMap,
 } from 'react-leaflet';
 import './App.css';
-import Sidebar from './Sidebar';
 import 'leaflet/dist/leaflet.css';
 
 
@@ -22,19 +31,6 @@ import {
   SUPPORT_LINKS,
   SYMPTOMS_PAGE,
 } from './siteContent';
-
-// Responsive utility
-function useIsMobile(breakpoint = 760) {
-  const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth <= breakpoint : false
-  );
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= breakpoint);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [breakpoint]);
-  return isMobile;
-}
 
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 
@@ -840,7 +836,6 @@ function ArticlePage({ onClose, outbreakReports, view }) {
 
 function App() {
   const prefersDarkMode = usePrefersDarkMode();
-  const isMobile = useIsMobile();
   const [reports, setReports] = useState([]);
   const [selectedMarkerId, setSelectedMarkerId] = useState('');
   const [totalReports, setTotalReports] = useState(0);
@@ -863,8 +858,6 @@ function App() {
   const [showRouteLayer, setShowRouteLayer] = useState(true);
   const [showDetailDrawer, setShowDetailDrawer] = useState(false);
   const [shareNotice, setShareNotice] = useState('');
-  // Sidebar hamburger state for mobile
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const outbreakDataUrl = `${process.env.PUBLIC_URL}/outbreak.json`;
 
   useEffect(() => {
@@ -1024,7 +1017,6 @@ function App() {
     updateHash('map');
   };
 
-  // Close popup when map is clicked (handled in ClusteredMarkers, but keep state in sync)
   const handleClosePopup = () => {
     setShowDetailDrawer(false);
     setSelectedMarkerId('');
@@ -1071,28 +1063,96 @@ function App() {
     window.open(report.link, '_blank', 'noopener,noreferrer');
   };
 
+  const openFeed = () => {
+    setIsFeedOpen(true);
+    setIsMenuOpen(false);
+  };
+
+  const statusChip = isLoading
+    ? { className: 'status-chip status-chip--loading', label: 'Syncing data' }
+    : loadError
+      ? { className: 'status-chip status-chip--error', label: 'Data error' }
+      : { className: 'status-chip status-chip--live', label: `Live · updated ${lastUpdatedLabel}` };
+
   return (
     <div className={`app-shell ${prefersDarkMode ? 'theme-dark' : 'theme-light'}`}>
-      {/* Hamburger for sidebar (mobile only) */}
-      {isMobile && (
-        <button
-          className="hamburger"
-          aria-label="Open filters menu"
-          onClick={() => setIsSidebarOpen(true)}
-          style={{ position: 'fixed', top: 18, left: 18, zIndex: 201, background: 'var(--accent, #c85c3e)', color: '#fff', border: 'none', borderRadius: '50%', width: 44, height: 44, fontSize: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }}
+      <div className="signal-map">
+        <MapContainer
+          center={MAP_CENTER}
+          zoom={MAP_ZOOM}
+          minZoom={2}
+          worldCopyJump
+          zoomControl={false}
+          style={{ width: '100%', height: '100%' }}
         >
-          ☰
-        </button>
-      )}
+          <TileLayer
+            url={tileUrl}
+            attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+          />
+          <ZoomControl position="bottomright" />
 
-      {/* Sidebar overlay for mobile, static for desktop */}
-      <Sidebar
-        className={`sidebar${isMobile ? (isSidebarOpen ? ' open' : '') : ''}`}
-        open={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        isMobile={isMobile}
-        // Add your filters/setFilters props here if needed
-      />
+          {showEndemic && ENDEMIC_ZONES.map(zone => (
+            <Polygon
+              key={zone.id}
+              positions={zone.coordinates}
+              pathOptions={{ className: 'endemic-zone' }}
+            >
+              <Tooltip sticky>{zone.name}</Tooltip>
+            </Polygon>
+          ))}
+
+          {showHistorical && HISTORICAL_CASES.map(item => (
+            <CircleMarker
+              key={item.id}
+              center={item.coordinates}
+              radius={Math.max(6, Math.sqrt(item.cases) * 1.1)}
+              pathOptions={{
+                className: 'historical-marker',
+                color: '#5a6b7a',
+                fillColor: '#5a6b7a',
+                fillOpacity: 0.18,
+                weight: 1,
+              }}
+            >
+              <Tooltip>{`${item.label}: ${formatNumber(item.cases)} historical cases`}</Tooltip>
+            </CircleMarker>
+          ))}
+
+          {showRouteLayer && (
+            <>
+              <Polyline
+                positions={ROUTE_ALERT.stops.map(stop => stop.coordinates)}
+                pathOptions={{ className: 'route-line' }}
+              />
+              {ROUTE_ALERT.stops.map(stop => (
+                <Marker key={stop.id} position={stop.coordinates} icon={buildRouteIcon(stop)}>
+                  <Tooltip>{stop.title}</Tooltip>
+                </Marker>
+              ))}
+            </>
+          )}
+
+          {markers.map(marker => {
+            const isSelected = marker.id === selectedMarkerId && showDetailDrawer;
+            return (
+              <Marker
+                key={marker.id}
+                position={marker.coordinates}
+                icon={buildAlertIcon(marker, isSelected)}
+                eventHandlers={{ click: () => handleMarkerClick(marker.id) }}
+              >
+                <Tooltip>{`${marker.locationName} · ${formatNumber(marker.reportCount)} signals`}</Tooltip>
+              </Marker>
+            );
+          })}
+
+          <MapViewportController
+            activeView={activeView}
+            selectedMarker={featuredMarker}
+            showDetailDrawer={showDetailDrawer}
+          />
+        </MapContainer>
+      </div>
 
       <div className="hud-layer">
         <div className="top-bar">
@@ -1118,11 +1178,107 @@ function App() {
             </button>
           </div>
         </div>
-        {/* ...existing code... */}
-        {/* The rest of your layout remains unchanged */}
-        {/* ...existing code... */}
+
+        <div className="home-stage">
+          <section className="hero-panel glass-card">
+            <div className="hero-panel__eyebrow-row">
+              <p className="page-eyebrow">Live signal atlas</p>
+              <span className={statusChip.className}>{statusChip.label}</span>
+            </div>
+            <h1 className="hero-title">Live global hantavirus signals with outbreak context</h1>
+            <p className="hero-copy">
+              A map-first read on where hantavirus is established, where historical burden sits, and where reporting
+              is spiking right now. Built for orientation, not for clinical decisions.
+            </p>
+            {loadError ? <p className="hero-error">{loadError}</p> : null}
+            <div className="metric-grid">
+              {homeMetrics.map(metric => (
+                <div key={metric.label} className="metric-card">
+                  <strong>{formatNumber(metric.value)}</strong>
+                  <span>{metric.label}</span>
+                </div>
+              ))}
+            </div>
+            <div className="hero-actions">
+              <button type="button" className="action-link action-link--primary" onClick={openFeed}>
+                News feed
+              </button>
+              <button type="button" className="action-link action-link--ghost" onClick={() => navigateToView('outbreak')}>
+                Open dossier
+              </button>
+            </div>
+            <button type="button" className="featured-banner glass-card" onClick={() => navigateToView('outbreak')}>
+              <span className="featured-banner__eyebrow">Featured event</span>
+              <strong>{FEATURED_OUTBREAK.title}</strong>
+              <span>{FEATURED_OUTBREAK.summary}</span>
+            </button>
+          </section>
+
+          <div className="floating-tools">
+            <button type="button" className="floating-button glass-card" onClick={openFeed}>
+              News feed
+            </button>
+            <LegendPanel
+              isExpanded={isLegendOpen}
+              onToggle={() => setIsLegendOpen(open => !open)}
+              showEndemic={showEndemic}
+              showHistorical={showHistorical}
+              showRouteLayer={showRouteLayer}
+              onToggleEndemic={() => setShowEndemic(value => !value)}
+              onToggleHistorical={() => setShowHistorical(value => !value)}
+              onToggleRouteLayer={() => setShowRouteLayer(value => !value)}
+            />
+          </div>
+        </div>
+
+        <SupportStrip />
       </div>
-      {/* ...existing code... */}
+
+      {isFeedOpen && (
+        <NewsFeedDrawer
+          feedSearch={feedSearch}
+          reports={filteredFeed}
+          onClose={() => setIsFeedOpen(false)}
+          onFeedSearch={setFeedSearch}
+          onSelectReport={handleFeedItemSelect}
+        />
+      )}
+
+      {showDetailDrawer && featuredMarker ? (
+        <ClusterDrawer cluster={featuredMarker} onClose={handleClosePopup} />
+      ) : null}
+
+      {isMenuOpen && (
+        <MenuDrawer
+          onClose={() => setIsMenuOpen(false)}
+          onNavigate={navigateToView}
+          outbreakReportCount={outbreakReports.length}
+        />
+      )}
+
+      {activeView !== 'map' && (
+        <div className="page-layer">
+          <div className="page-shell">
+            <ArticlePage
+              view={activeView}
+              outbreakReports={outbreakReports}
+              onClose={() => navigateToView('map')}
+            />
+          </div>
+        </div>
+      )}
+
+      {isIntroOpen && (
+        <WelcomeModal
+          onClose={dismissIntro}
+          onOpenGuide={() => {
+            dismissIntro();
+            navigateToView('hantavirus');
+          }}
+        />
+      )}
+
+      {shareNotice ? <div className="share-toast glass-card">{shareNotice}</div> : null}
     </div>
   );
 }
