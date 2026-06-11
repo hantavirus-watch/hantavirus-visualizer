@@ -29,7 +29,15 @@ jobs:
           DATA_ENGINE_URL: https://raw.githubusercontent.com/hantavirus-watch/hantavirus-data-engine/main/data/outbreaks.json
         run: |
           mkdir -p hanta-visualizer/public
-          curl -fsSL --retry 3 --retry-delay 10 "$DATA_ENGINE_URL" -o hanta-visualizer/public/outbreak.json
+          http_code=$(curl -sS --retry 3 --retry-delay 10 -w '%{http_code}' \
+            "$DATA_ENGINE_URL" -o hanta-visualizer/public/outbreak.json)
+          if [ "$http_code" != "200" ]; then
+            echo "::error::Could not fetch outbreak data (HTTP $http_code) from $DATA_ENGINE_URL"
+            if [ "$http_code" = "404" ]; then
+              echo "::error::A 404 here almost always means the hantavirus-data-engine repo is private. raw.githubusercontent.com only serves public repos anonymously, and this workflow's GITHUB_TOKEN cannot read another repo. Make hantavirus-data-engine public, or switch this step to an authenticated fetch with a token that can read it."
+            fi
+            exit 1
+          fi
           python3 -c "import json; data = json.load(open('hanta-visualizer/public/outbreak.json')); assert isinstance(data, list), 'expected a JSON array'; print(f'Fetched {len(data)} outbreak records from the data engine')"
 
       - name: Set up Node
