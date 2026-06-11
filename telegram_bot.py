@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Hantavirus Telegram bot.
-Reads outbreak.json and sends a formatted summary to a Telegram chat.
+Reads public/outbreak.json (the data-engine output, fetched by the update
+workflow) and sends a formatted summary to a Telegram chat.
 
 Required environment variables:
   TELEGRAM_BOT_TOKEN  – token from @BotFather
@@ -11,14 +12,14 @@ Optional:
   FORCE_SEND=1        – send even if nothing changed since last run
 """
 
+import html
 import json
 import os
 import sys
 import hashlib
 from pathlib import Path
 from urllib.request import urlopen, Request
-from urllib.error import URLError
-from urllib.parse import urlencode
+from urllib.error import HTTPError, URLError
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 
@@ -41,8 +42,14 @@ def tg_api(method: str, payload: dict) -> dict:
     try:
         with urlopen(req, timeout=15) as resp:
             return json.loads(resp.read())
+    except HTTPError as exc:
+        # Telegram returns the real reason (bad chat_id, HTML parse error, …)
+        # in the response body, so surface it instead of a bare status code.
+        body = exc.read().decode("utf-8", errors="replace")
+        print(f"[ERROR] Telegram API HTTP {exc.code}: {body}")
+        sys.exit(1)
     except URLError as exc:
-        print(f"[ERROR] Telegram API error: {exc}")
+        print(f"[ERROR] Telegram API error: {exc.reason}")
         sys.exit(1)
 
 
@@ -84,7 +91,7 @@ def build_message(clusters: list[dict], total_reports: int) -> str:
     for cluster in clusters[:MAX_CLUSTERS]:
         emoji = severity_emoji(cluster["reportCount"])
         label = severity_label(cluster["reportCount"])
-        name  = cluster["locationName"]
+        name  = html.escape(str(cluster["locationName"]))
         count = cluster["reportCount"]
         lines.append(f"{emoji} <b>{name}</b> — {count} reports <i>({label})</i>")
 
@@ -145,7 +152,7 @@ def main():
         return
 
     if not OUTBREAK_JSON.exists():
-        print(f"[ERROR] {OUTBREAK_JSON} not found. Run scraper.py first.")
+        print(f"[ERROR] {OUTBREAK_JSON} not found. The update workflow fetches it from the data engine before this step runs.")
         sys.exit(1)
 
     data     = json.loads(OUTBREAK_JSON.read_text())

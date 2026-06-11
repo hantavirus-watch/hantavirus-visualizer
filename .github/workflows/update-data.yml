@@ -24,8 +24,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run scraper
-        run: python3 scraper.py
+      - name: Fetch outbreak data from the data engine
+        env:
+          DATA_ENGINE_URL: https://raw.githubusercontent.com/hantavirus-watch/hantavirus-data-engine/main/data/outbreaks.json
+        run: |
+          mkdir -p hanta-visualizer/public
+          curl -fsSL --retry 3 --retry-delay 10 "$DATA_ENGINE_URL" -o hanta-visualizer/public/outbreak.json
+          python3 -c "import json; data = json.load(open('hanta-visualizer/public/outbreak.json')); assert isinstance(data, list), 'expected a JSON array'; print(f'Fetched {len(data)} outbreak records from the data engine')"
 
       - name: Set up Node
         uses: actions/setup-node@v4
