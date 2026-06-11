@@ -33,6 +33,8 @@ import {
 } from './siteContent';
 
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
+// Force English formatting everywhere, regardless of the visitor's browser locale.
+const APP_LOCALE = 'en-US';
 
 // (Removed unused constant DEFAULT_LEGEND_ITEMS)
 const MAP_CENTER = [20, 0];
@@ -88,7 +90,7 @@ function toTitleCase(value) {
 }
 
 function formatNumber(value) {
-  return new Intl.NumberFormat().format(value);
+  return new Intl.NumberFormat(APP_LOCALE).format(value);
 }
 
 function formatPublishedDate(publishedAt) {
@@ -98,7 +100,7 @@ function formatPublishedDate(publishedAt) {
     return 'Date unavailable';
   }
 
-  return publishedDate.toLocaleString();
+  return publishedDate.toLocaleString(APP_LOCALE, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 function formatRelativeTime(dateValue) {
@@ -109,7 +111,7 @@ function formatRelativeTime(dateValue) {
   }
 
   const diffMs = date.getTime() - Date.now();
-  const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+  const formatter = new Intl.RelativeTimeFormat(APP_LOCALE, { numeric: 'auto' });
   const minutes = Math.round(diffMs / 60000);
 
   if (Math.abs(minutes) < 60) {
@@ -422,6 +424,9 @@ function PageFrame({ eyebrow, title, description, onClose, children, actions }) 
           {actions}
           <button type="button" className="page-close-button" onClick={onClose}>
             Back to map
+          </button>
+          <button type="button" className="panel-close" onClick={onClose} aria-label="Close page">
+            ✕
           </button>
         </div>
       </header>
@@ -850,6 +855,7 @@ function App() {
   const [isFeedOpen, setIsFeedOpen] = useState(false);
   const [feedSearch, setFeedSearch] = useState('');
   const [isLegendOpen, setIsLegendOpen] = useState(true);
+  const [isOverviewOpen, setIsOverviewOpen] = useState(true);
   const [isIntroOpen, setIsIntroOpen] = useState(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -1188,10 +1194,16 @@ function App() {
         </div>
 
         <div className="home-stage">
+          {isOverviewOpen ? (
           <section className="hero-panel glass-card">
             <div className="hero-panel__eyebrow-row">
               <p className="page-eyebrow">Live signal atlas</p>
-              <span className={statusChip.className}>{statusChip.label}</span>
+              <div className="hero-panel__eyebrow-actions">
+                <span className={statusChip.className}>{statusChip.label}</span>
+                <button type="button" className="panel-close" onClick={() => setIsOverviewOpen(false)} aria-label="Collapse overview panel">
+                  ✕
+                </button>
+              </div>
             </div>
             <h1 className="hero-title">Live global hantavirus signals with outbreak context</h1>
             <p className="hero-copy">
@@ -1221,6 +1233,11 @@ function App() {
               <span>{FEATURED_OUTBREAK.summary}</span>
             </button>
           </section>
+          ) : (
+            <button type="button" className="hero-reopen glass-card" onClick={() => setIsOverviewOpen(true)}>
+              Show overview
+            </button>
+          )}
 
           <div className="floating-tools">
             <button type="button" className="floating-button glass-card" onClick={openFeed}>

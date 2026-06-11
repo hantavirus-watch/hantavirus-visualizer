@@ -559,6 +559,55 @@ button {
   gap: 14px;
 }
 
+.hero-panel__eyebrow-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Round icon close button used on the hero panel and content pages. */
+.panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.panel-close:hover {
+  transform: translateY(-1px);
+  background: var(--surface-strong);
+  border-color: var(--line-strong);
+}
+
+.hero-reopen {
+  justify-self: start;
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.hero-reopen:hover {
+  transform: translateY(-1px);
+  background: var(--surface-strong);
+  border-color: var(--line-strong);
+}
+
 .status-chip {
   display: inline-flex;
   align-items: center;
