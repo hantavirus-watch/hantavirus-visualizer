@@ -636,6 +636,9 @@ function WelcomeModal({ onClose, onOpenGuide }) {
               This view combines live alerts, long-horizon risk zones and a curated outbreak dossier in one surface. Use it as a navigation tool, not as a clinical source.
             </p>
           </div>
+          <button type="button" className="drawer-close" onClick={onClose} aria-label="Close welcome dialog">
+            Close
+          </button>
         </div>
 
         <div className="intro-grid">
@@ -911,6 +914,11 @@ function App() {
       setIsMenuOpen(false);
       setIsFeedOpen(false);
       setShowDetailDrawer(false);
+      setIsIntroOpen(false);
+
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem('hanta-intro-dismissed', '1');
+      }
 
       if (activeView !== 'map') {
         updateHash('map');
