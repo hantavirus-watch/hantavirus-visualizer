@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/hantavirus-visualizer/static/css/main.4df3bdb3.css",
-    "main.js": "/hantavirus-visualizer/static/js/main.05ed233f.js",
+    "main.css": "/hantavirus-visualizer/static/css/main.7ccdaefd.css",
+    "main.js": "/hantavirus-visualizer/static/js/main.fc86a14f.js",
     "static/js/453.a3fbf7a8.chunk.js": "/hantavirus-visualizer/static/js/453.a3fbf7a8.chunk.js",
     "index.html": "/hantavirus-visualizer/index.html",
-    "main.4df3bdb3.css.map": "/hantavirus-visualizer/static/css/main.4df3bdb3.css.map",
-    "main.05ed233f.js.map": "/hantavirus-visualizer/static/js/main.05ed233f.js.map",
+    "main.7ccdaefd.css.map": "/hantavirus-visualizer/static/css/main.7ccdaefd.css.map",
+    "main.fc86a14f.js.map": "/hantavirus-visualizer/static/js/main.fc86a14f.js.map",
     "453.a3fbf7a8.chunk.js.map": "/hantavirus-visualizer/static/js/453.a3fbf7a8.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.4df3bdb3.css",
-    "static/js/main.05ed233f.js"
+    "static/css/main.7ccdaefd.css",
+    "static/js/main.fc86a14f.js"
   ]
 }
