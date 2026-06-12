@@ -669,6 +669,12 @@ function WelcomeModal({ onClose, onOpenGuide }) {
 }
 
 function SupportStrip() {
+  const [isDismissed, setIsDismissed] = useState(false);
+
+  if (isDismissed) {
+    return null;
+  }
+
   return (
     <section className="support-strip glass-card" aria-label="Project links">
       <div>
@@ -686,6 +692,9 @@ function SupportStrip() {
         <a className="action-link action-link--primary" href={SUPPORT_LINKS.support} target="_blank" rel="noreferrer">
           Support
         </a>
+        <button type="button" className="panel-close" onClick={() => setIsDismissed(true)} aria-label="Dismiss project links">
+          ✕
+        </button>
       </div>
     </section>
   );
